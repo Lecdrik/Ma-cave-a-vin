@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#5b1e2d">
+<title>Ma Cave à Vin</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{--wine:#5b1e2d;--cream:#faf7f2;--ink:#292522;--muted:#706962;--line:#e5ddd4;--green:#28664a;--gold:#9b6a13}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:var(--wine);color:white;padding:22px max(18px,calc((100% - 1100px)/2));}
+header h1{margin:0;font-size:1.55rem}header p{margin:5px 0 0;color:#f0dfe2}
+main{max-width:1100px;margin:auto;padding:18px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}.stat,.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:14px}.stat strong{display:block;font-size:1.45rem;color:var(--wine)}.stat span{font-size:.85rem;color:var(--muted)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.tabs button{background:white;color:var(--wine);border:1px solid var(--line)}button,.button{border:0;border-radius:9px;background:var(--wine);color:white;padding:10px 13px;font:inherit;cursor:pointer}button.secondary{background:white;color:var(--wine);border:1px solid var(--line)}button.danger{background:#8e2a2a}.tabs button.active{background:var(--wine);color:white}
+h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}.field label{font-size:.88rem;color:var(--muted)}input,select,textarea{width:100%;padding:10px;border:1px solid #d8cec4;border-radius:8px;background:#fff;font:inherit;color:var(--ink)}textarea{min-height:70px}form .actions{display:flex;gap:8px;flex-wrap:wrap}.hint{font-size:.86rem;color:var(--muted)}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.toolbar input{flex:1;min-width:180px}.wine-list{display:grid;gap:10px}.wine{background:white;border:1px solid var(--line);border-radius:12px;padding:13px;display:grid;grid-template-columns:1fr auto;gap:8px}.wine h3{margin:0;color:var(--wine)}.wine p{margin:3px 0;color:var(--muted);font-size:.9rem}.pill{display:inline-block;border-radius:99px;padding:3px 8px;font-size:.78rem;background:#f3e8d8;color:#6a4b1a;margin:3px 4px 0 0}.pill.ready{background:#e0efe5;color:#20573c}.pill.late{background:#f8e2df;color:#8e2a2a}.wine .actions{display:flex;gap:6px;align-items:start;flex-wrap:wrap;justify-content:end}.wine .actions button{padding:7px 9px;font-size:.86rem}.hidden{display:none!important}.empty{padding:22px;text-align:center;color:var(--muted);background:white;border:1px dashed var(--line);border-radius:12px}.notice{background:#f7f0e3;border-radius:10px;padding:10px 12px;margin:10px 0;color:#634d28;font-size:.9rem}.foot{margin-top:18px;color:var(--muted);font-size:.83rem}.filelabel{display:inline-flex;align-items:center;gap:8px}
+@media(max-width:650px){main{padding:12px}.stats{grid-template-columns:repeat(3,1fr);gap:6px}.stat{padding:10px}.stat strong{font-size:1.2rem}.grid{grid-template-columns:1fr}.wine{grid-template-columns:1fr}.wine .actions{justify-content:start}}
+</style>
+</head>
+<body>
+<header><h1>🍷 Ma Cave à Vin</h1><p>Ton inventaire, les fenêtres de dégustation et les rappels.</p></header>
+<main>
+<div class="stats">
+ <div class="stat"><strong id="statBottles">0</strong><span>bouteilles en cave</span></div>
+ <div class="stat"><strong id="statReady">0</strong><span>à boire / bientôt</span></div>
+ <div class="stat"><strong id="statLate">0</strong><span>à vérifier</span></div>
+</div>
+<div class="notice">Les fenêtres de dégustation sont des estimations à confirmer selon le producteur, le millésime et la conservation. Cette version garde les données sur cet appareil uniquement.</div>
+<div class="tabs">
+ <button class="active" data-tab="inventory">Ma cave</button>
+ <button data-tab="add">Ajouter un vin</button>
+ <button data-tab="alerts">Alertes & sauvegarde</button>
+</div>
+<section id="inventory">
+ <div class="toolbar"><input id="search" placeholder="Rechercher un vin, domaine, appellation…"><select id="filter"><option value="all">Tous les vins</option><option value="ready">À boire / bientôt</option><option value="keep">À conserver</option><option value="late">Fenêtre dépassée</option></select></div>
+ <div id="wineList" class="wine-list"></div>
+ <div class="panel" style="margin-top:14px"><h2>Repérer les bons rapports qualité-prix</h2><p class="hint">Recherche des avis, guides et offres selon le budget. Le prix seul ne garantit pas la qualité : compare l'appellation, le millésime, le producteur, les notes de dégustation et les frais de livraison.</p><div class="toolbar"><input id="budget" type="number" min="1" step="1" placeholder="Budget maximum par bouteille (€)"><select id="style"><option value="tous types">Tous styles</option><option>Rouge</option><option>Blanc</option><option>Rosé</option><option>Effervescent</option></select><button id="valueSearch">Rechercher des bons rapports qualité-prix</button></div></div>
+</section>
+<section id="add" class="panel hidden">
+ <h2 id="formTitle">Ajouter une bouteille ou un lot</h2>
+ <form id="wineForm">
+  <input type="hidden" id="wineId">
+  <div class="grid">
+   <div class="field"><label for="name">Nom du vin *</label><input id="name" required placeholder="Ex. Château…"></div>
+   <div class="field"><label for="producer">Domaine / producteur</label><input id="producer" placeholder="Domaine, château, maison…"></div>
+   <div class="field"><label for="appellation">Appellation / région</label><input id="appellation" placeholder="Ex. Saint-Émilion"></div>
+   <div class="field"><label for="vintage">Millésime</label><input id="vintage" type="number" min="1900" max="2100" placeholder="2019"></div>
+   <div class="field"><label for="color">Type</label><select id="color"><option>Rouge</option><option>Blanc</option><option>Rosé</option><option>Effervescent</option><option>Liquoreux</option><option>Autre</option></select></div>
+   <div class="field"><label for="quantity">Quantité (bouteilles) *</label><input id="quantity" type="number" min="0" value="1" required></div>
+   <div class="field"><label for="drinkFrom">À boire à partir de</label><input id="drinkFrom" type="number" min="1900" max="2100" placeholder="2025"></div>
+   <div class="field"><label for="drinkUntil">À boire jusqu'à</label><input id="drinkUntil" type="number" min="1900" max="2100" placeholder="2030"></div>
+   <div class="field"><label for="location">Emplacement</label><input id="location" placeholder="Ex. casier B, rangée 2"></div>
+   <div class="field"><label for="purchase">Prix payé par bouteille (€)</label><input id="purchase" type="number" min="0" step="0.01" placeholder="Ex. 18,90"></div>
+   <div class="field"><label for="marketPrice">Prix constaté en ligne (€)</label><input id="marketPrice" type="number" min="0" step="0.01" placeholder="Prix du meilleur vendeur trouvé"></div>
+   <div class="field"><label for="priceUrl">Lien du vendeur / de l'offre</label><input id="priceUrl" type="url" placeholder="https://…"></div>
+   <div class="field"><label for="priceChecked">Date de vérification du prix</label><input id="priceChecked" type="date"></div>
+  </div>
+  <div class="actions" style="margin:0 0 12px"><button type="button" class="secondary" id="findPrice">Comparer les prix sur Internet</button><button type="button" class="secondary" id="findWine">Trouver ce vin et des alternatives</button></div>
+  <p class="hint">Ces boutons ouvrent des recherches web. Les prix doivent être vérifiés sur les sites des vendeurs (frais de livraison et millésime compris) : ils ne sont pas récupérés automatiquement.</p>
+  <div class="field"><label for="notes">Notes / accord mets-vins</label><textarea id="notes" placeholder="Température, accord, conseil du caviste…"></textarea></div>
+  <div class="field"><label for="labelPhoto">Photo de l'étiquette (facultatif)</label><input id="labelPhoto" type="file" accept="image/*" capture="environment"><div class="hint">La photo aide à conserver l'étiquette pour la consulter. La reconnaissance automatique du texte n'est pas incluse dans cette version.</div><div id="photoPreview"></div></div>
+  <div class="actions"><button type="submit">Enregistrer le vin</button><button type="button" class="secondary" id="resetForm">Effacer le formulaire</button></div>
+ </form>
+</section>
+<section id="alerts" class="panel hidden">
+ <h2>Alertes et sauvegarde</h2>
+ <p>Les rappels locaux peuvent s'afficher si tu autorises les notifications et que l'application est ouverte. Le navigateur ne garantit pas des alertes programmées quand il est fermé.</p>
+ <div class="actions"><button id="enableNotifications">Autoriser les notifications</button><button id="checkAlerts" class="secondary">Vérifier les vins à boire</button></div>
+ <p id="notifyStatus" class="hint"></p>
+ <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+ <h3>Exporter ou restaurer ta cave</h3>
+ <p class="hint">Fais régulièrement une sauvegarde JSON. Le fichier CSV permet aussi d'ouvrir l'inventaire dans Excel.</p>
+ <div class="actions"><button id="exportJson">Sauvegarder (JSON)</button><button id="exportCsv" class="secondary">Exporter CSV</button><label class="button secondary filelabel">Restaurer JSON<input id="importJson" type="file" accept=".json,application/json" hidden></label></div>
+ <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+ <h3>E-mails automatiques</h3>
+ <p>Pour envoyer des e-mails automatiquement même lorsque tes appareils sont éteints, il faut connecter un service d'automatisation ou un petit serveur. Cette version ne transmet aucune donnée et n'envoie pas d'e-mail en arrière-plan. Une adresse e-mail peut être ajoutée dans une future version synchronisée.</p>
+ <p class="hint">Conseil : installe l'application depuis un hébergement HTTPS pour profiter au mieux des notifications et de l'ajout à l'écran d'accueil.</p>
+</section>
+<div class="foot">Version 1.0 · Données conservées dans le stockage local du navigateur. Effacer les données du navigateur peut supprimer l'inventaire : utilise l'export JSON.</div>
+</main>
+<script>
+const KEY='ma-cave-a-vin-v1';
+let wines=JSON.parse(localStorage.getItem(KEY)||'[]');
+let photoData='';
+const $=id=>document.getElementById(id);
+const year=new Date().getFullYear();
+const fmt=n=>Number(n||0).toLocaleString('fr-FR');
+function save(){localStorage.setItem(KEY,JSON.stringify(wines));render()}
+function status(w){
+ const from=Number(w.drinkFrom)||null, until=Number(w.drinkUntil)||null;
+ if(until && year>until)return {key:'late',label:'Fenêtre dépassée',cls:'late'};
+ if(from && year<from)return {key:'keep',label:`À conserver jusqu'à ${from}`,cls:''};
+ if((from&&year>=from)||(until&&year<=until))return {key:'ready',label:'Dans la fenêtre de dégustation',cls:'ready'};
+ return {key:'unknown',label:'Période à préciser',cls:''};
+}
+function render(){
+ const total=wines.reduce((a,w)=>a+Number(w.quantity||0),0);
+ $('statBottles').textContent=fmt(total);
+ $('statReady').textContent=fmt(wines.filter(w=>['ready','late'].includes(status(w).key)).reduce((a,w)=>a+Number(w.quantity||0),0));
+ $('statLate').textContent=fmt(wines.filter(w=>status(w).key==='late').reduce((a,w)=>a+Number(w.quantity||0),0));
+ const q=$('search').value.toLowerCase().trim(), f=$('filter').value;
+ const arr=wines.filter(w=>{
+  const hay=[w.name,w.producer,w.appellation,w.vintage,w.location,w.color].join(' ').toLowerCase();
+  const s=status(w).key;
+  return (!q||hay.includes(q))&&(f==='all'||(f==='ready'&&s==='ready')||(f==='keep'&&s==='keep')||(f==='late'&&s==='late'));
+ }).sort((a,b)=>(Number(a.drinkUntil)||9999)-(Number(b.drinkUntil)||9999));
+ $('wineList').innerHTML=arr.length?arr.map(w=>{
+  const s=status(w), period=(w.drinkFrom||w.drinkUntil)?`${w.drinkFrom||'—'} – ${w.drinkUntil||'—'}`:'Non renseignée';
+  return `<article class="wine"><div><h3>${esc(w.name)}</h3><p>${esc([w.producer,w.appellation,w.vintage,w.color].filter(Boolean).join(' · '))}</p><span class="pill ${s.cls}">${esc(s.label)}</span><span class="pill">${fmt(w.quantity)} bouteille(s)</span><p>Période : ${esc(period)} · Emplacement : ${esc(w.location||'non renseigné')}</p>${w.purchase?`<p>Prix payé : ${esc(w.purchase)} €`+(w.marketPrice?` · Prix en ligne : ${esc(w.marketPrice)} €`:'')+`</p>`:''}${w.priceUrl?`<p><a href="${esc(w.priceUrl)}" target="_blank" rel="noopener">Voir l'offre${w.priceChecked?' (vérifiée le '+esc(w.priceChecked)+')':''}</a></p>`:''}${w.notes?`<p>${esc(w.notes)}</p>`:''}${w.photo?`<p><a href="${w.photo}" target="_blank" rel="noopener">Voir l'étiquette</a></p>`:''}</div><div class="actions"><button class="secondary" onclick="editWine('${w.id}')">Modifier</button><button onclick="drinkWine('${w.id}')">Boire 1</button><button class="danger" onclick="deleteWine('${w.id}')">Supprimer</button></div></article>`;
+ }).join(''):'<div class="empty">Aucun vin ne correspond. Ajoute ton premier vin dans l’onglet « Ajouter un vin ».</div>';
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function clearForm(){ $('wineForm').reset();$('wineId').value='';$('quantity').value=1;$('formTitle').textContent='Ajouter une bouteille ou un lot';photoData='';$('photoPreview').innerHTML='';}
+function switchTab(tab){document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));$(tab).classList.remove('hidden');document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));}
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+$('labelPhoto').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{photoData=r.result;$('photoPreview').innerHTML='<img alt="Aperçu de l’étiquette" style="max-width:160px;max-height:180px;border-radius:8px" src="'+photoData+'">'};r.readAsDataURL(f)});
+$('wineForm').addEventListener('submit',e=>{
+ e.preventDefault();const id=$('wineId').value||crypto.randomUUID();
+ const old=wines.find(w=>w.id===id);
+ const w={id,name:$('name').value.trim(),producer:$('producer').value.trim(),appellation:$('appellation').value.trim(),vintage:$('vintage').value, color:$('color').value,quantity:Math.max(0,Number($('quantity').value)),drinkFrom:$('drinkFrom').value,drinkUntil:$('drinkUntil').value,location:$('location').value.trim(),purchase:$('purchase').value,marketPrice:$('marketPrice').value,priceUrl:$('priceUrl').value.trim(),priceChecked:$('priceChecked').value,notes:$('notes').value.trim(),photo:photoData||(old?.photo||'')};
+ if(old)wines=wines.map(x=>x.id===id?w:x);else wines.push(w);save();clearForm();switchTab('inventory');
+});
+window.editWine=id=>{const w=wines.find(x=>x.id===id);if(!w)return;switchTab('add');$('wineId').value=w.id;['name','producer','appellation','vintage','color','quantity','drinkFrom','drinkUntil','location','purchase','marketPrice','priceUrl','priceChecked','notes'].forEach(k=>$(k).value=w[k]??(k==='quantity'?1:''));photoData=w.photo||'';$('photoPreview').innerHTML=photoData?'<img alt="Étiquette" style="max-width:160px;max-height:180px;border-radius:8px" src="'+photoData+'">':'';$('formTitle').textContent='Modifier le vin'};
+window.drinkWine=id=>{const w=wines.find(x=>x.id===id);if(!w)return;if(w.quantity>1)w.quantity--;else if(confirm('C’est la dernière bouteille. La retirer de la cave ?'))wines=wines.filter(x=>x.id!==id);save()};
+window.deleteWine=id=>{if(confirm('Supprimer ce vin de l’inventaire ?')){wines=wines.filter(x=>x.id!==id);save()}};
+$('resetForm').onclick=clearForm;$('search').oninput=render;$('filter').onchange=render;
+$('enableNotifications').onclick=async()=>{if(!('Notification'in window)){$('notifyStatus').textContent='Les notifications ne sont pas prises en charge par ce navigateur.';return}const p=await Notification.requestPermission();$('notifyStatus').textContent=p==='granted'?'Notifications autorisées sur cet appareil.':'Autorisation non accordée.'};
+function checkAlerts(){const list=wines.filter(w=>['ready','late'].includes(status(w).key)&&Number(w.quantity)>0);const msg=list.length?list.slice(0,8).map(w=>`${w.name} (${w.quantity}) — ${status(w).label}`).join('\n'):'Aucun vin dans sa fenêtre de dégustation selon les dates renseignées.';$('notifyStatus').textContent=msg;if('Notification'in window&&Notification.permission==='granted'&&list.length)new Notification('Ma Cave à Vin',{body:`${list.length} vin(s) à regarder : ${list.slice(0,3).map(w=>w.name).join(', ')}`})}
+$('checkAlerts').onclick=checkAlerts;
+function download(name,content,type){const a=document.createElement('a');const url=URL.createObjectURL(new Blob([content],{type}));a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
+$('exportJson').onclick=()=>download('ma-cave-a-vin-sauvegarde.json',JSON.stringify(wines,null,2),'application/json');
+$('exportCsv').onclick=()=>{const cols=['name','producer','appellation','vintage','color','quantity','drinkFrom','drinkUntil','location','purchase','marketPrice','priceUrl','priceChecked','notes'];const cell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';download('ma-cave-a-vin.csv',[cols.join(';'),...wines.map(w=>cols.map(k=>cell(w[k])).join(';'))].join('\r\n'),'text/csv;charset=utf-8')};
+$('importJson').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d))throw Error();if(confirm('Remplacer la cave actuelle par la sauvegarde ?')){wines=d;save();alert('Sauvegarde restaurée.')}}catch{alert('Fichier JSON invalide.')}e.target.value=''};r.readAsText(f)};
+function openSearch(q){window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank','noopener')}
+$('findPrice').onclick=()=>{const n=$('name').value.trim(),p=$('producer').value.trim(),a=$('appellation').value.trim(),v=$('vintage').value;const q=[n,p,a,v,'prix bouteille achat en ligne'].filter(Boolean).join(' ');if(!n&&!p&&!a){alert('Saisis au moins le nom du vin, du domaine ou de l’appellation.');return}openSearch(q)};
+$('findWine').onclick=()=>{const n=$('name').value.trim(),p=$('producer').value.trim(),a=$('appellation').value.trim(),v=$('vintage').value;const q=[n,p,a,v,'avis prix meilleur rapport qualité prix'].filter(Boolean).join(' ');if(!n&&!p&&!a){alert('Saisis au moins le nom du vin, du domaine ou de l’appellation.');return}openSearch(q)};
+$('valueSearch').onclick=()=>{const b=$('budget').value,st=$('style').value;if(!b||Number(b)<=0){alert('Indique ton budget maximum par bouteille.');return}openSearch('meilleurs vins rapport qualité prix '+st+' moins de '+b+' euros France 2026 guide des vins')};
+if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+render();
+</script>
+</body></html>

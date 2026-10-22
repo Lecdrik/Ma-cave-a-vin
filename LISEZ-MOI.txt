@@ -1,0 +1,22 @@
+MA CAVE À VIN — VERSION 1.0
+
+Démarrage simple :
+1. Décompressez le ZIP dans un dossier sur votre ordinateur.
+2. Ouvrez index.html avec Firefox, Chrome ou Edge.
+3. Ajoutez vos vins, renseignez les années « À boire à partir de » et « À boire jusqu'à ».
+4. Utilisez « Sauvegarder (JSON) » régulièrement et gardez une copie du fichier.
+
+IMPORTANT — limites de cette première version :
+- Les données sont enregistrées localement dans le navigateur. Elles ne se synchronisent pas entre ordinateur et téléphone.
+- La photo d'étiquette peut être conservée, mais la lecture automatique du texte (OCR) n'est pas intégrée.
+- Les notifications ne sont pas garanties lorsque l'application est fermée.
+- Aucun e-mail automatique n'est envoyé dans cette version. Cela nécessite un service distant/automatisation et une configuration.
+- Les dates de dégustation doivent être vérifiées selon le vin, le producteur, le millésime et la conservation.
+
+Pour une installation PWA avec fonctionnement hors ligne, il faut servir ces fichiers via HTTPS (ou un serveur local). Ouvrir simplement index.html suffit pour utiliser les fonctions principales, mais pas toutes les fonctions PWA.
+
+NOUVEAUTÉS VERSION 1.1 :
+- Prix payé, prix observé en ligne, URL du vendeur et date de vérification.
+- Boutons de recherche web pour trouver un prix ou comparer des alternatives.
+- Recherche des vins à bon rapport qualité-prix selon un budget et un style.
+IMPORTANT : les recherches ouvrent un moteur de recherche ; les prix ne sont pas extraits automatiquement. Saisissez le prix et le lien vérifiés. Comparez le même millésime, le format, les frais de port et la fiabilité du vendeur.

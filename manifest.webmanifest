@@ -1,0 +1,10 @@
+{
+  "name": "Ma Cave à Vin",
+  "short_name": "Ma Cave",
+  "description": "Inventaire et fenêtres de dégustation de cave à vin",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#faf7f2",
+  "theme_color": "#5b1e2d",
+  "icons": []
+}
