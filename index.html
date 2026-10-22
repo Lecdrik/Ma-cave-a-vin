@@ -16,6 +16,7 @@ main{max-width:1100px;margin:auto;padding:18px}.stats{display:grid;grid-template
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.tabs button{background:white;color:var(--wine);border:1px solid var(--line)}button,.button{border:0;border-radius:9px;background:var(--wine);color:white;padding:10px 13px;font:inherit;cursor:pointer}button.secondary{background:white;color:var(--wine);border:1px solid var(--line)}button.danger{background:#8e2a2a}.tabs button.active{background:var(--wine);color:white}
 h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}.field label{font-size:.88rem;color:var(--muted)}input,select,textarea{width:100%;padding:10px;border:1px solid #d8cec4;border-radius:8px;background:#fff;font:inherit;color:var(--ink)}textarea{min-height:70px}form .actions{display:flex;gap:8px;flex-wrap:wrap}.hint{font-size:.86rem;color:var(--muted)}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.toolbar input{flex:1;min-width:180px}.wine-list{display:grid;gap:10px}.wine{background:white;border:1px solid var(--line);border-radius:12px;padding:13px;display:grid;grid-template-columns:1fr auto;gap:8px}.wine h3{margin:0;color:var(--wine)}.wine p{margin:3px 0;color:var(--muted);font-size:.9rem}.pill{display:inline-block;border-radius:99px;padding:3px 8px;font-size:.78rem;background:#f3e8d8;color:#6a4b1a;margin:3px 4px 0 0}.pill.ready{background:#e0efe5;color:#20573c}.pill.late{background:#f8e2df;color:#8e2a2a}.wine .actions{display:flex;gap:6px;align-items:start;flex-wrap:wrap;justify-content:end}.wine .actions button{padding:7px 9px;font-size:.86rem}.hidden{display:none!important}.empty{padding:22px;text-align:center;color:var(--muted);background:white;border:1px dashed var(--line);border-radius:12px}.notice{background:#f7f0e3;border-radius:10px;padding:10px 12px;margin:10px 0;color:#634d28;font-size:.9rem}.foot{margin-top:18px;color:var(--muted);font-size:.83rem}.filelabel{display:inline-flex;align-items:center;gap:8px}
 @media(max-width:650px){main{padding:12px}.stats{grid-template-columns:repeat(3,1fr);gap:6px}.stat{padding:10px}.stat strong{font-size:1.2rem}.grid{grid-template-columns:1fr}.wine{grid-template-columns:1fr}.wine .actions{justify-content:start}}
+.value-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 18px}.wine-illustration{width:54px;height:100px;float:left;margin:0 12px 6px 0;flex-shrink:0}.wine-main{min-width:0}.wine-head{display:flex;align-items:flex-start;gap:10px}.wine-head .wine-illustration{float:none;margin:0;width:42px;height:78px}.map-panel{margin-top:14px}.region-list{display:flex;gap:8px;flex-wrap:wrap}.region-chip{display:inline-block;background:#f3e8d8;border-radius:99px;padding:6px 10px;font-size:.86rem}.region-chip a{color:#6a4b1a;text-decoration:none}.map-note{font-size:.86rem;color:var(--muted)}@media(max-width:650px){.value-stats{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -35,6 +36,11 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
  <button data-tab="alerts">Alertes & sauvegarde</button>
 </div>
 <section id="inventory">
+ <div class="value-stats">
+  <div class="stat"><strong id="totalPurchase">—</strong><span>Valeur d’achat de la cave</span></div>
+  <div class="stat"><strong id="totalMarket">—</strong><span>Valeur estimée actuelle (prix renseignés)</span></div>
+ </div>
+ <div class="panel map-panel"><h2>Origines des vins de ma cave</h2><p class="map-note">Les régions sont déduites des appellations/régions renseignées. Clique sur une région pour voir les bouteilles correspondantes sur OpenStreetMap.</p><div id="regionList" class="region-list"></div><p id="regionEmpty" class="hint">Renseigne une région ou une appellation sur tes fiches pour faire apparaître les origines.</p></div>
  <div class="toolbar"><input id="search" placeholder="Rechercher un vin, domaine, appellation…"><select id="filter"><option value="all">Tous les vins</option><option value="ready">À boire / bientôt</option><option value="keep">À conserver</option><option value="late">Fenêtre dépassée</option></select></div>
  <div id="wineList" class="wine-list"></div>
  <div class="panel" style="margin-top:14px"><h2>Repérer les bons rapports qualité-prix</h2><p class="hint">Recherche des avis, guides et offres selon le budget. Le prix seul ne garantit pas la qualité : compare l'appellation, le millésime, le producteur, les notes de dégustation et les frais de livraison.</p><div class="toolbar"><input id="budget" type="number" min="1" step="1" placeholder="Budget maximum par bouteille (€)"><select id="style"><option value="tous types">Tous styles</option><option>Rouge</option><option>Blanc</option><option>Rosé</option><option>Effervescent</option></select><button id="valueSearch">Rechercher des bons rapports qualité-prix</button></div></div>
@@ -100,7 +106,7 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
  <p>Pour envoyer des e-mails automatiquement même lorsque tes appareils sont éteints, il faut connecter un service d'automatisation ou un petit serveur. Cette version ne transmet aucune donnée et n'envoie pas d'e-mail en arrière-plan. Une adresse e-mail peut être ajoutée dans une future version synchronisée.</p>
  <p class="hint">Conseil : installe l'application depuis un hébergement HTTPS pour profiter au mieux des notifications et de l'ajout à l'écran d'accueil.</p>
 </section>
-<div class="foot">Version 1.3 · Données conservées dans le stockage local du navigateur. Effacer les données du navigateur peut supprimer l'inventaire : utilise l'export JSON.</div>
+<div class="foot">Version 1.4 · Données conservées dans le stockage local du navigateur. Effacer les données du navigateur peut supprimer l'inventaire : utilise l'export JSON.</div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
@@ -118,11 +124,32 @@ function status(w){
  if((from&&year>=from)||(until&&year<=until))return {key:'ready',label:'Dans la fenêtre de dégustation',cls:'ready'};
  return {key:'unknown',label:'Période à préciser',cls:''};
 }
+function bottleIllustration(color,kind){let glass='#5b1e2d';const c=String(color||'').toLocaleLowerCase('fr');if(kind==='pineau')glass=c.includes('blanc')?'#b18a3c':'#7b2638';else if(c.includes('blanc')||c.includes('liquoreux'))glass='#b9a05b';else if(c.includes('rosé')||c.includes('rose'))glass='#d78c9c';else if(c.includes('effervescent'))glass='#8c9b67';return `<svg class="wine-illustration" viewBox="0 0 54 100" role="img" aria-label="Illustration bouteille ${esc(color||'de vin')}"><rect x="21" y="3" width="12" height="19" rx="2" fill="#bca98c"/><rect x="19" y="17" width="16" height="7" rx="2" fill="#8c765f"/><path d="M19 24 L19 36 C19 42 11 47 10 55 L8 88 Q8 95 15 95 L39 95 Q46 95 46 88 L44 55 C43 47 35 42 35 36 L35 24Z" fill="${glass}" stroke="#46372e" stroke-width="1.5"/><rect x="13" y="59" width="28" height="21" rx="2" fill="#f7f0e3" stroke="#d8cec4"/><path d="M18 70 Q27 61 36 70 Q27 78 18 70Z" fill="${glass}" opacity=".9"/><text x="27" y="86" font-size="4" text-anchor="middle" fill="#6a4b1a">${kind==='pineau'?'PINEAU':esc(color||'VIN').toUpperCase().slice(0,10)}</text></svg>`}
+function inferRegion(w){const a=String(w.appellation||'').toLocaleLowerCase('fr');const p=String(w.producer||'').toLocaleLowerCase('fr');const t=a+' '+p;const rules=[
+ ['Bordeaux',['bordeaux','saint-émilion','saint emilion','pomerol','médoc','medoc','pauillac','margaux','pessac','sauternes','entre-deux-mers']],
+ ['Bourgogne',['bourgogne','chablis','meursault','gevrey','beaune','pommard',' nuits-saint',' nuits saint','macon','mâcon','pouilly-fuissé','pouilly fuisse']],
+ ['Champagne',['champagne','reims','épernay','epernay']],
+ ['Vallée du Rhône',['rhône','rhone','châteauneuf','chateauneuf','gigondas','vacqueyras','crozes','hermitage','condrieu']],
+ ['Val de Loire',['loire','sancerre','pouilly-fumé','pouilly fume','muscadet','chinon','saumur','vouvray','bourgueil']],
+ ['Alsace',['alsace','riesling','gewurztraminer','gewürztraminer','ribeauvillé','ribeauville']],
+ ['Provence',['provence','bandol','côtes de provence','cotes de provence','cassis']],
+ ['Languedoc-Roussillon',['languedoc','roussillon','corbières','corbieres','minervois','pic-saint-loup','fitou']],
+ ['Sud-Ouest',['sud-ouest','cahors','madiran','bergerac','jurançon','jurancon','gaillac']],
+ ['Jura et Savoie',['jura','savoie','arbois','vin jaune','crépy','crepy']],
+ ['Charentes (Pineau)',['pineau','charentes','cognac']]
+ ];return (rules.find(([r,keys])=>keys.some(k=>t.includes(k)))||[])[0]||'Origine à préciser'}
+const regionPlaces={'Bordeaux':[44.84,-0.58],'Bourgogne':[47.02,4.84],'Champagne':[49.04,3.96],'Vallée du Rhône':[44.05,4.83],'Val de Loire':[47.26,-0.08],'Alsace':[48.25,7.44],'Provence':[43.52,5.45],'Languedoc-Roussillon':[43.60,3.88],'Sud-Ouest':[44.45,0.15],'Jura et Savoie':[46.75,5.75],'Charentes (Pineau)':[45.70,-0.33]};
+function renderRegions(){const counts={};wines.filter(w=>Number(w.quantity)>0).forEach(w=>{const r=inferRegion(w);counts[r]=(counts[r]||0)+Number(w.quantity||0)});const known=Object.keys(counts).filter(r=>r!=='Origine à préciser');$('regionList').innerHTML=known.map(r=>{const xy=regionPlaces[r];const q=encodeURIComponent(r+' vignoble France');const url=xy?`https://www.openstreetmap.org/?mlat=${xy[0]}&mlon=${xy[1]}#map=8/${xy[0]}/${xy[1]}`:`https://www.openstreetmap.org/search?query=${q}`;return `<span class="region-chip"><a href="${url}" target="_blank" rel="noopener">${esc(r)} · ${fmt(counts[r])} bouteille(s) ↗</a></span>`}).join('');$('regionEmpty').classList.toggle('hidden',known.length>0);if(counts['Origine à préciser'])$('regionList').insertAdjacentHTML('beforeend',`<span class="region-chip">Origine à préciser · ${fmt(counts['Origine à préciser'])} bouteille(s)</span>`)}
 function render(){
  const total=wines.reduce((a,w)=>a+Number(w.quantity||0),0);
  $('statBottles').textContent=fmt(total);
  $('statReady').textContent=fmt(wines.filter(w=>['ready','late'].includes(status(w).key)).reduce((a,w)=>a+Number(w.quantity||0),0));
  $('statLate').textContent=fmt(wines.filter(w=>status(w).key==='late').reduce((a,w)=>a+Number(w.quantity||0),0));
+ const pricedPurchase=wines.reduce((a,w)=>a+(w.purchase!==''&&w.purchase!=null?Number(w.purchase||0)*Number(w.quantity||0):0),0);
+ const pricedMarket=wines.reduce((a,w)=>a+(w.marketPrice!==''&&w.marketPrice!=null?Number(w.marketPrice||0)*Number(w.quantity||0):0),0);
+ const euro=n=>Number(n||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
+ $('totalPurchase').textContent=euro(pricedPurchase);$('totalMarket').textContent=euro(pricedMarket);
+ renderRegions();
  const q=$('search').value.toLowerCase().trim(), f=$('filter').value;
  const arr=wines.filter(w=>{
   const hay=[w.name,w.producer,w.appellation,w.vintage,w.location,w.color].join(' ').toLowerCase();
@@ -131,7 +158,7 @@ function render(){
  }).sort((a,b)=>(Number(a.drinkUntil)||9999)-(Number(b.drinkUntil)||9999));
  $('wineList').innerHTML=arr.length?arr.map(w=>{
   const s=status(w), period=(w.drinkFrom||w.drinkUntil)?`${w.drinkFrom||'—'} – ${w.drinkUntil||'—'}`:'Non renseignée';
-  return `<article class="wine"><div><h3>${esc(w.name)}</h3><p>${esc([w.producer,w.appellation,w.vintage,w.color].filter(Boolean).join(' · '))}</p>${w.kind==='pineau'?'<span class="pill">Pineau · bouteille de 75 cl</span>':''}<span class="pill ${s.cls}">${esc(s.label)}</span><span class="pill">${fmt(w.quantity)} bouteille(s)</span>${w.kind==='pineau'?'<p>Cuvée '+esc(w.vintage||'année non renseignée')+' · Format 75 cl</p>':`<p>Période : ${esc(period)} · Emplacement : ${esc(w.location||'non renseigné')}</p>`}${w.purchase?`<p>Prix payé : ${esc(w.purchase)} €`+(w.marketPrice?` · Prix en ligne : ${esc(w.marketPrice)} €`:'')+`</p>`:''}${w.priceUrl?`<p><a href="${esc(w.priceUrl)}" target="_blank" rel="noopener">Voir l'offre${w.priceChecked?' (vérifiée le '+esc(w.priceChecked)+')':''}</a></p>`:''}${w.notes?`<p>${esc(w.notes)}</p>`:''}${w.photo?`<p><a href="${w.photo}" target="_blank" rel="noopener">Voir l'étiquette</a></p>`:''}</div><div class="actions">${w.kind==='pineau'?'':'<button class="secondary" onclick="editWine(\''+w.id+'\')">Modifier</button>'}<button onclick="drinkWine('${w.id}')">Boire 1</button><button class="danger" onclick="deleteWine('${w.id}')">Supprimer</button></div></article>`;
+  return `<article class="wine"><div class="wine-main"><div class="wine-head">${bottleIllustration(w.color,w.kind)}<div><h3>${esc(w.name)}</h3><p>${esc([w.producer,w.appellation,w.vintage,w.color].filter(Boolean).join(' · '))}</p></div></div>${w.kind==='pineau'?'<span class="pill">Pineau · bouteille de 75 cl</span>':''}<span class="pill ${s.cls}">${esc(s.label)}</span><span class="pill">${fmt(w.quantity)} bouteille(s)</span>${w.kind==='pineau'?'<p>Cuvée '+esc(w.vintage||'année non renseignée')+' · Format 75 cl</p>':`<p>Période : ${esc(period)} · Emplacement : ${esc(w.location||'non renseigné')}</p>`}${w.purchase?`<p>Prix payé : ${esc(w.purchase)} €`+(w.marketPrice?` · Prix en ligne : ${esc(w.marketPrice)} €`:'')+`</p>`:''}${w.priceUrl?`<p><a href="${esc(w.priceUrl)}" target="_blank" rel="noopener">Voir l'offre${w.priceChecked?' (vérifiée le '+esc(w.priceChecked)+')':''}</a></p>`:''}${w.notes?`<p>${esc(w.notes)}</p>`:''}${w.photo?`<p><a href="${w.photo}" target="_blank" rel="noopener">Voir l'étiquette</a></p>`:''}</div><div class="actions">${w.kind==='pineau'?'':'<button class="secondary" onclick="editWine(\''+w.id+'\')">Modifier</button>'}<button onclick="drinkWine('${w.id}')">Boire 1</button><button class="danger" onclick="deleteWine('${w.id}')">Supprimer</button></div></article>`;
  }).join(''):'<div class="empty">Aucun vin ne correspond. Ajoute ton premier vin dans l’onglet « Ajouter un vin ».</div>';
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
