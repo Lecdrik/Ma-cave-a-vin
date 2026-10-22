@@ -1,22 +1,30 @@
-MA CAVE À VIN — VERSION 1.0
+MA CAVE À VIN — VERSION 1.2
 
-Démarrage simple :
-1. Décompressez le ZIP dans un dossier sur votre ordinateur.
-2. Ouvrez index.html avec Firefox, Chrome ou Edge.
-3. Ajoutez vos vins, renseignez les années « À boire à partir de » et « À boire jusqu'à ».
-4. Utilisez « Sauvegarder (JSON) » régulièrement et gardez une copie du fichier.
+NOUVEAUTÉS VERSION 1.2
+- Lecture automatique du texte d'une photo d'étiquette grâce à Tesseract.js (OCR dans le navigateur).
+- Proposition automatique du nom, d'un producteur et du millésime lorsqu'ils sont repérés.
+- Les champs restent modifiables : vérifier et corriger avant d'enregistrer, car la lecture n'est pas toujours exacte.
+- Icône du site déclarée et manifeste configuré pour icon-512.png.
+- Cache du service worker versionné pour faciliter la mise à jour.
 
-IMPORTANT — limites de cette première version :
-- Les données sont enregistrées localement dans le navigateur. Elles ne se synchronisent pas entre ordinateur et téléphone.
-- La photo d'étiquette peut être conservée, mais la lecture automatique du texte (OCR) n'est pas intégrée.
-- Les notifications ne sont pas garanties lorsque l'application est fermée.
-- Aucun e-mail automatique n'est envoyé dans cette version. Cela nécessite un service distant/automatisation et une configuration.
-- Les dates de dégustation doivent être vérifiées selon le vin, le producteur, le millésime et la conservation.
+UTILISER LA LECTURE D'ÉTIQUETTE
+1. Ouvre l'application avec une connexion Internet.
+2. Va dans « Ajouter un vin », puis prends/sélectionne une photo nette, sans reflet, de l'étiquette.
+3. Appuie sur « Lire l'étiquette et remplir les champs ».
+4. Attends la fin du traitement. Au premier usage, le moteur OCR français est téléchargé depuis le CDN jsDelivr.
+5. Vérifie le nom, le domaine et le millésime proposés, corrige si nécessaire, puis enregistre.
 
-Pour une installation PWA avec fonctionnement hors ligne, il faut servir ces fichiers via HTTPS (ou un serveur local). Ouvrir simplement index.html suffit pour utiliser les fonctions principales, mais pas toutes les fonctions PWA.
+CONFIDENTIALITÉ ET LIMITES
+- La reconnaissance du texte s'exécute dans le navigateur sur l'appareil. Le script et les données du moteur OCR sont téléchargés depuis Internet au premier usage; la photo n'est pas envoyée à un service OCR distant par cette fonction.
+- Le moteur lit du texte mais ne connaît pas forcément l'identité du vin. Le nom, le domaine et le millésime proposés peuvent être inexacts ou dans le mauvais champ.
+- La fonction OCR nécessite une connexion Internet au moins pour charger la bibliothèque et les données linguistiques.
+- Les données de la cave restent dans le stockage local du navigateur de cet appareil. Utilise régulièrement « Sauvegarder (JSON) » dans « Alertes & sauvegarde ». La version n'effectue pas de synchronisation entre appareils.
 
-NOUVEAUTÉS VERSION 1.1 :
-- Prix payé, prix observé en ligne, URL du vendeur et date de vérification.
-- Boutons de recherche web pour trouver un prix ou comparer des alternatives.
-- Recherche des vins à bon rapport qualité-prix selon un budget et un style.
-IMPORTANT : les recherches ouvrent un moteur de recherche ; les prix ne sont pas extraits automatiquement. Saisissez le prix et le lien vérifiés. Comparez le même millésime, le format, les frais de port et la fiabilité du vendeur.
+INSTALLATION / MISE À JOUR
+Déployer les fichiers à la racine du dépôt GitHub Pages, en gardant le nom exact icon-512.png à la racine. Après publication, recharge la page. Si l'ancienne version reste en cache, ferme l'application et rouvre-la; ne supprime pas les données du navigateur.
+
+FONCTIONS CONSERVÉES DE LA VERSION 1.1
+- Inventaire, quantité, emplacement et fenêtres de dégustation.
+- Prix d'achat, prix observé en ligne, lien vendeur et date de vérification.
+- Recherche web des prix et alternatives (les prix ne sont pas récupérés automatiquement).
+- Export JSON/CSV et restauration JSON.

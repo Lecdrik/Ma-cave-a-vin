@@ -1,17 +1,12 @@
 {
   "name": "Ma Cave à Vin",
   "short_name": "Ma Cave",
-  "description": "Inventaire et fenêtres de dégustation de cave à vin",
+  "description": "Gestion personnelle de cave à vin avec lecture des étiquettes",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#faf7f2",
   "theme_color": "#5b1e2d",
   "icons": [
-    {
-      "src": "./icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
+    {"src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}
   ]
 }

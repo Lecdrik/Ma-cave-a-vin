@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#5b1e2d">
 <title>Ma Cave à Vin</title>
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="./icon-512.png">
 <style>
 :root{--wine:#5b1e2d;--cream:#faf7f2;--ink:#292522;--muted:#706962;--line:#e5ddd4;--green:#28664a;--gold:#9b6a13}
 *{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
@@ -17,8 +18,6 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
 @media(max-width:650px){main{padding:12px}.stats{grid-template-columns:repeat(3,1fr);gap:6px}.stat{padding:10px}.stat strong{font-size:1.2rem}.grid{grid-template-columns:1fr}.wine{grid-template-columns:1fr}.wine .actions{justify-content:start}}
 </style>
 </head>
-<link rel="icon" type="image/png" href="./icon-512.png">
-<link rel="apple-touch-icon" href="./icon-512.png">
 <body>
 <header><h1>🍷 Ma Cave à Vin</h1><p>Ton inventaire, les fenêtres de dégustation et les rappels.</p></header>
 <main>
@@ -60,7 +59,7 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
   <div class="actions" style="margin:0 0 12px"><button type="button" class="secondary" id="findPrice">Comparer les prix sur Internet</button><button type="button" class="secondary" id="findWine">Trouver ce vin et des alternatives</button></div>
   <p class="hint">Ces boutons ouvrent des recherches web. Les prix doivent être vérifiés sur les sites des vendeurs (frais de livraison et millésime compris) : ils ne sont pas récupérés automatiquement.</p>
   <div class="field"><label for="notes">Notes / accord mets-vins</label><textarea id="notes" placeholder="Température, accord, conseil du caviste…"></textarea></div>
-  <div class="field"><label for="labelPhoto">Photo de l'étiquette (facultatif)</label><input id="labelPhoto" type="file" accept="image/*" capture="environment"><div class="hint">La photo aide à conserver l'étiquette pour la consulter. La reconnaissance automatique du texte n'est pas incluse dans cette version.</div><div id="photoPreview"></div></div>
+  <div class="field"><label for="labelPhoto">Photo de l'étiquette (facultatif)</label><input id="labelPhoto" type="file" accept="image/*" capture="environment"><div class="hint">Prends une photo nette, bien éclairée et cadrée sur l'étiquette. Tu peux ensuite lancer la lecture automatique du texte.</div><div id="photoPreview"></div><div class="actions"><button type="button" class="secondary" id="readLabel">Lire l'étiquette et remplir les champs</button></div><p id="ocrStatus" class="hint" aria-live="polite">La lecture se fait sur ton appareil. Au premier usage, le moteur OCR français est téléchargé depuis Internet. Vérifie les champs avant d'enregistrer.</p></div>
   <div class="actions"><button type="submit">Enregistrer le vin</button><button type="button" class="secondary" id="resetForm">Effacer le formulaire</button></div>
  </form>
 </section>
@@ -80,6 +79,7 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
 </section>
 <div class="foot">Version 1.0 · Données conservées dans le stockage local du navigateur. Effacer les données du navigateur peut supprimer l'inventaire : utilise l'export JSON.</div>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 const KEY='ma-cave-a-vin-v1';
 let wines=JSON.parse(localStorage.getItem(KEY)||'[]');
@@ -115,7 +115,27 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function clearForm(){ $('wineForm').reset();$('wineId').value='';$('quantity').value=1;$('formTitle').textContent='Ajouter une bouteille ou un lot';photoData='';$('photoPreview').innerHTML='';}
 function switchTab(tab){document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));$(tab).classList.remove('hidden');document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));}
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
-$('labelPhoto').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{photoData=r.result;$('photoPreview').innerHTML='<img alt="Aperçu de l’étiquette" style="max-width:160px;max-height:180px;border-radius:8px" src="'+photoData+'">'};r.readAsDataURL(f)});
+$('labelPhoto').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{photoData=r.result;$('photoPreview').innerHTML='<img alt="Aperçu de l’étiquette" style="max-width:220px;max-height:260px;border-radius:8px" src="'+photoData+'">';$('ocrStatus').textContent='Photo prête. Appuie sur « Lire l’étiquette » pour essayer de reconnaître le texte.'};r.readAsDataURL(f)});
+$('readLabel').addEventListener('click',async()=>{
+ const file=$('labelPhoto').files[0];
+ if(!file){$('ocrStatus').textContent='Prends ou sélectionne d’abord une photo de l’étiquette.';return}
+ if(!window.Tesseract){$('ocrStatus').textContent='Le moteur OCR n’a pas pu être chargé. Vérifie la connexion Internet puis recharge la page.';return}
+ const btn=$('readLabel');btn.disabled=true;
+ try{
+  $('ocrStatus').textContent='Chargement du moteur de lecture… cela peut prendre un peu de temps au premier usage.';
+  const worker=await Tesseract.createWorker('fra',1,{logger:m=>{if(m.status==='recognizing text')$('ocrStatus').textContent='Lecture de l’étiquette : '+Math.round((m.progress||0)*100)+' %';}});
+  const result=await worker.recognize(file);await worker.terminate();
+  const raw=(result.data.text||'').split(/\r?\n/).map(x=>x.trim()).filter(x=>x.length>1);
+  if(!raw.length){$('ocrStatus').textContent='Aucun texte lisible détecté. Essaie une photo plus nette, sans reflet, et bien cadrée.';return}
+  const vintageMatch=(result.data.text.match(/\b(?:19|20)\d{2}\b/)||[])[0];
+  const ignore=/^(vin|wine|appellation|mis en bouteille|produit de france|contient des sulfites|75 cl|750 ml|alc\.?|vol\.?|%|france|rouge|blanc|rosé)$/i;
+  const useful=raw.filter(x=>!ignore.test(x)&&!/^\d+[,.]?\d*\s*(cl|ml|%)/i.test(x));
+  if(!$('name').value.trim()&&useful.length)$('name').value=useful[0].slice(0,100);
+  if(vintageMatch&&!$('vintage').value)$('vintage').value=vintageMatch;
+  if(!$('producer').value.trim()&&useful.length>1)$('producer').value=useful[1].slice(0,100);
+  $('ocrStatus').textContent='Lecture terminée. Vérifie et corrige les champs proposés : la reconnaissance peut se tromper. Texte détecté : '+result.data.text.replace(/\s+/g,' ').trim().slice(0,450);
+ }catch(err){$('ocrStatus').textContent='La lecture a échoué. Réessaie avec une photo plus nette et une connexion Internet.';console.error(err)}finally{btn.disabled=false}
+});
 $('wineForm').addEventListener('submit',e=>{
  e.preventDefault();const id=$('wineId').value||crypto.randomUUID();
  const old=wines.find(w=>w.id===id);
