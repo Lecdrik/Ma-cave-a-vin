@@ -28,3 +28,9 @@ FONCTIONS CONSERVÉES DE LA VERSION 1.1
 - Prix d'achat, prix observé en ligne, lien vendeur et date de vérification.
 - Recherche web des prix et alternatives (les prix ne sont pas récupérés automatiquement).
 - Export JSON/CSV et restauration JSON.
+
+
+VERSION 1.3 - NOUVEAUTES
+- Ajout simple du pineau personnel : année, rouge ou blanc, nombre de bouteilles de 75 cl. Les quantités de même couleur et année sont regroupées.
+- Nouveau conseiller d’accords mets-vins : décris librement ton plat, l’application propose des bouteilles disponibles dans ta cave selon leur type et les informations enregistrées. Le conseil est indicatif.
+- Les données restent dans le même stockage local (clé conservée) afin de préserver l’inventaire existant. Par précaution, exporte tout de même une sauvegarde JSON avant la mise à jour.

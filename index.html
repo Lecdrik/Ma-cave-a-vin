@@ -30,6 +30,8 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
 <div class="tabs">
  <button class="active" data-tab="inventory">Ma cave</button>
  <button data-tab="add">Ajouter un vin</button>
+ <button data-tab="pineau">Ajouter du pineau</button>
+ <button data-tab="pairing">Quel vin avec mon plat ?</button>
  <button data-tab="alerts">Alertes & sauvegarde</button>
 </div>
 <section id="inventory">
@@ -63,6 +65,27 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
   <div class="actions"><button type="submit">Enregistrer le vin</button><button type="button" class="secondary" id="resetForm">Effacer le formulaire</button></div>
  </form>
 </section>
+<section id="pineau" class="panel hidden">
+ <h2>Ajouter mon pineau</h2>
+ <p class="hint">Pour tes bouteilles personnelles : année de la cuvée, rouge ou blanc, et nombre de bouteilles de 75 cl.</p>
+ <form id="pineauForm">
+  <div class="grid">
+   <div class="field"><label for="pineauYear">Année de la cuvée *</label><input id="pineauYear" type="number" min="1900" max="2100" required placeholder="2026"></div>
+   <div class="field"><label for="pineauColor">Couleur *</label><select id="pineauColor"><option>Rouge</option><option>Blanc</option></select></div>
+   <div class="field"><label for="pineauQuantity">Nombre de bouteilles de 75 cl *</label><input id="pineauQuantity" type="number" min="1" value="1" required></div>
+  </div>
+  <div class="actions"><button type="submit">Enregistrer le pineau</button></div>
+ </form>
+ <p class="hint">Les bouteilles de pineau seront visibles dans « Ma cave » et dans les sauvegardes habituelles.</p>
+</section>
+<section id="pairing" class="panel hidden">
+ <h2>Quel vin avec mon plat ?</h2>
+ <p>Écris ton plat avec quelques détails (sauce, accompagnement, cuisson). L'application cherchera les bouteilles disponibles dans ta cave et proposera les accords les plus plausibles à partir des informations enregistrées.</p>
+ <div class="field"><label for="dish">Ton plat</label><textarea id="dish" placeholder="Ex. magret de canard avec sauce aux champignons et pommes de terre"></textarea></div>
+ <div class="actions"><button id="recommendWine">Trouver le meilleur accord dans ma cave</button></div>
+ <div id="pairingResult" style="margin-top:14px" aria-live="polite"></div>
+ <p class="hint">Le conseil est indicatif : il dépend des informations saisies dans ta cave et ne remplace pas les détails de dégustation propres à chaque bouteille.</p>
+</section>
 <section id="alerts" class="panel hidden">
  <h2>Alertes et sauvegarde</h2>
  <p>Les rappels locaux peuvent s'afficher si tu autorises les notifications et que l'application est ouverte. Le navigateur ne garantit pas des alertes programmées quand il est fermé.</p>
@@ -77,7 +100,7 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
  <p>Pour envoyer des e-mails automatiquement même lorsque tes appareils sont éteints, il faut connecter un service d'automatisation ou un petit serveur. Cette version ne transmet aucune donnée et n'envoie pas d'e-mail en arrière-plan. Une adresse e-mail peut être ajoutée dans une future version synchronisée.</p>
  <p class="hint">Conseil : installe l'application depuis un hébergement HTTPS pour profiter au mieux des notifications et de l'ajout à l'écran d'accueil.</p>
 </section>
-<div class="foot">Version 1.0 · Données conservées dans le stockage local du navigateur. Effacer les données du navigateur peut supprimer l'inventaire : utilise l'export JSON.</div>
+<div class="foot">Version 1.3 · Données conservées dans le stockage local du navigateur. Effacer les données du navigateur peut supprimer l'inventaire : utilise l'export JSON.</div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
@@ -108,7 +131,7 @@ function render(){
  }).sort((a,b)=>(Number(a.drinkUntil)||9999)-(Number(b.drinkUntil)||9999));
  $('wineList').innerHTML=arr.length?arr.map(w=>{
   const s=status(w), period=(w.drinkFrom||w.drinkUntil)?`${w.drinkFrom||'—'} – ${w.drinkUntil||'—'}`:'Non renseignée';
-  return `<article class="wine"><div><h3>${esc(w.name)}</h3><p>${esc([w.producer,w.appellation,w.vintage,w.color].filter(Boolean).join(' · '))}</p><span class="pill ${s.cls}">${esc(s.label)}</span><span class="pill">${fmt(w.quantity)} bouteille(s)</span><p>Période : ${esc(period)} · Emplacement : ${esc(w.location||'non renseigné')}</p>${w.purchase?`<p>Prix payé : ${esc(w.purchase)} €`+(w.marketPrice?` · Prix en ligne : ${esc(w.marketPrice)} €`:'')+`</p>`:''}${w.priceUrl?`<p><a href="${esc(w.priceUrl)}" target="_blank" rel="noopener">Voir l'offre${w.priceChecked?' (vérifiée le '+esc(w.priceChecked)+')':''}</a></p>`:''}${w.notes?`<p>${esc(w.notes)}</p>`:''}${w.photo?`<p><a href="${w.photo}" target="_blank" rel="noopener">Voir l'étiquette</a></p>`:''}</div><div class="actions"><button class="secondary" onclick="editWine('${w.id}')">Modifier</button><button onclick="drinkWine('${w.id}')">Boire 1</button><button class="danger" onclick="deleteWine('${w.id}')">Supprimer</button></div></article>`;
+  return `<article class="wine"><div><h3>${esc(w.name)}</h3><p>${esc([w.producer,w.appellation,w.vintage,w.color].filter(Boolean).join(' · '))}</p>${w.kind==='pineau'?'<span class="pill">Pineau · bouteille de 75 cl</span>':''}<span class="pill ${s.cls}">${esc(s.label)}</span><span class="pill">${fmt(w.quantity)} bouteille(s)</span>${w.kind==='pineau'?'<p>Cuvée '+esc(w.vintage||'année non renseignée')+' · Format 75 cl</p>':`<p>Période : ${esc(period)} · Emplacement : ${esc(w.location||'non renseigné')}</p>`}${w.purchase?`<p>Prix payé : ${esc(w.purchase)} €`+(w.marketPrice?` · Prix en ligne : ${esc(w.marketPrice)} €`:'')+`</p>`:''}${w.priceUrl?`<p><a href="${esc(w.priceUrl)}" target="_blank" rel="noopener">Voir l'offre${w.priceChecked?' (vérifiée le '+esc(w.priceChecked)+')':''}</a></p>`:''}${w.notes?`<p>${esc(w.notes)}</p>`:''}${w.photo?`<p><a href="${w.photo}" target="_blank" rel="noopener">Voir l'étiquette</a></p>`:''}</div><div class="actions">${w.kind==='pineau'?'':'<button class="secondary" onclick="editWine(\''+w.id+'\')">Modifier</button>'}<button onclick="drinkWine('${w.id}')">Boire 1</button><button class="danger" onclick="deleteWine('${w.id}')">Supprimer</button></div></article>`;
  }).join(''):'<div class="empty">Aucun vin ne correspond. Ajoute ton premier vin dans l’onglet « Ajouter un vin ».</div>';
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -142,6 +165,45 @@ $('wineForm').addEventListener('submit',e=>{
  const w={id,name:$('name').value.trim(),producer:$('producer').value.trim(),appellation:$('appellation').value.trim(),vintage:$('vintage').value, color:$('color').value,quantity:Math.max(0,Number($('quantity').value)),drinkFrom:$('drinkFrom').value,drinkUntil:$('drinkUntil').value,location:$('location').value.trim(),purchase:$('purchase').value,marketPrice:$('marketPrice').value,priceUrl:$('priceUrl').value.trim(),priceChecked:$('priceChecked').value,notes:$('notes').value.trim(),photo:photoData||(old?.photo||'')};
  if(old)wines=wines.map(x=>x.id===id?w:x);else wines.push(w);save();clearForm();switchTab('inventory');
 });
+$('pineauForm').addEventListener('submit',e=>{
+ e.preventDefault();
+ const vintage=String($('pineauYear').value), color=$('pineauColor').value, quantity=Math.max(1,Number($('pineauQuantity').value)||1);
+ const name='Pineau '+color.toLowerCase();
+ const existing=wines.find(w=>w.kind==='pineau'&&String(w.vintage)===vintage&&w.color===color);
+ if(existing){existing.quantity=Number(existing.quantity||0)+quantity;}
+ else wines.push({id:crypto.randomUUID(),kind:'pineau',name,producer:'Ma production',appellation:'Pineau personnel',vintage,color,quantity,drinkFrom:'',drinkUntil:'',location:'',purchase:'',marketPrice:'',priceUrl:'',priceChecked:'',notes:'Bouteilles de 75 cl'});
+ save();$('pineauForm').reset();$('pineauQuantity').value=1;switchTab('inventory');
+});
+function recommendPairing(){
+ const dish=$('dish').value.trim().toLocaleLowerCase('fr');
+ if(!dish){$('pairingResult').innerHTML='<div class="notice">Décris d’abord le plat que tu vas manger.</div>';return}
+ const available=wines.filter(w=>Number(w.quantity)>0);
+ if(!available.length){$('pairingResult').innerHTML='<div class="empty">Ta cave est vide pour le moment. Ajoute d’abord tes bouteilles pour recevoir un accord personnalisé.</div>';return}
+ const rules=[
+  {words:['boeuf','bœuf','entrecôte','côte de boeuf','côte de bœuf','agneau','canard','magret','gibier','daube','bourguignon','steak','barbecue','grillade'], types:['rouge'], reason:'Les rouges avec du corps accompagnent souvent bien les viandes et les plats riches.'},
+  {words:['poisson','huître','huitre','fruits de mer','crevette','moule','sushi','cabillaud','truite','sole'], types:['blanc','effervescent'], reason:'Un blanc frais ou un effervescent convient souvent aux poissons et aux fruits de mer.'},
+  {words:['poulet','volaille','dinde','porc','veau','rôti','roti','quiche','champignon'], types:['blanc','rouge'], reason:'Une volaille ou une viande blanche s’accorde souvent avec un blanc structuré ou un rouge souple.'},
+  {words:['fromage','raclette','fondue','camembert','chèvre','chevre','comté','comte'], types:['rouge','blanc'], reason:'Le type de fromage compte beaucoup ; un blanc équilibré ou un rouge peu tannique est souvent une bonne piste.'},
+  {words:['salade','légume','legume','asperge','artichaut'], types:['blanc','rosé'], reason:'Les légumes et les plats frais s’accordent souvent avec un blanc vif ou un rosé.'},
+  {words:['dessert','chocolat','tarte','fruit','gâteau','gateau'], types:['liquoreux','blanc'], reason:'Avec un dessert, cherche un vin dont la douceur équilibre celle du plat.'},
+  {words:['apéro','apéritif','aperitif','foie gras'], types:['blanc','effervescent','liquoreux'], reason:'Un blanc aromatique ou un effervescent peut accompagner l’apéritif ; avec le foie gras, un blanc doux est une piste classique.'}
+ ];
+ const matched=rules.find(r=>r.words.some(k=>dish.includes(k)));
+ const types=matched?matched.types:['rouge','blanc','rosé','effervescent','liquoreux'];
+ const scored=available.map(w=>{
+  const meta=[w.name,w.color,w.appellation,w.producer,w.notes].join(' ').toLocaleLowerCase('fr');
+  let score=0; const color=(w.color||'').toLocaleLowerCase('fr');
+  if(types.includes(color))score+=4;
+  if(matched&&matched.words.some(k=>meta.includes(k)))score+=2;
+  if(w.kind==='pineau')score-=1;
+  if(w.notes&&dish.split(/\s+/).some(word=>word.length>4&&w.notes.toLocaleLowerCase('fr').includes(word)))score+=1;
+  if(Number(w.quantity)>0)score+=0.1;
+  return {w,score};
+ }).sort((a,b)=>b.score-a.score).slice(0,3);
+ const best=scored[0];
+ $('pairingResult').innerHTML='<div class="notice"><strong>Notre meilleure piste :</strong> '+esc(best.w.name)+' ('+esc([best.w.producer,best.w.appellation,best.w.vintage,best.w.color].filter(Boolean).join(' · '))+') — '+fmt(best.w.quantity)+' bouteille(s) disponible(s).<br>'+esc(matched?matched.reason:'Je n’ai pas reconnu de famille de plat précise : voici une suggestion basée sur les informations de ta cave. Pour affiner, précise la sauce ou l’accompagnement.')+'</div>'+scored.slice(1).map(x=>'<article class="wine" style="margin-top:8px"><div><h3>Autre possibilité : '+esc(x.w.name)+'</h3><p>'+esc([x.w.producer,x.w.appellation,x.w.vintage,x.w.color].filter(Boolean).join(' · '))+'</p><span class="pill">'+fmt(x.w.quantity)+' bouteille(s)</span></div></article>').join('');
+}
+$('recommendWine').addEventListener('click',recommendPairing);
 window.editWine=id=>{const w=wines.find(x=>x.id===id);if(!w)return;switchTab('add');$('wineId').value=w.id;['name','producer','appellation','vintage','color','quantity','drinkFrom','drinkUntil','location','purchase','marketPrice','priceUrl','priceChecked','notes'].forEach(k=>$(k).value=w[k]??(k==='quantity'?1:''));photoData=w.photo||'';$('photoPreview').innerHTML=photoData?'<img alt="Étiquette" style="max-width:160px;max-height:180px;border-radius:8px" src="'+photoData+'">':'';$('formTitle').textContent='Modifier le vin'};
 window.drinkWine=id=>{const w=wines.find(x=>x.id===id);if(!w)return;if(w.quantity>1)w.quantity--;else if(confirm('C’est la dernière bouteille. La retirer de la cave ?'))wines=wines.filter(x=>x.id!==id);save()};
 window.deleteWine=id=>{if(confirm('Supprimer ce vin de l’inventaire ?')){wines=wines.filter(x=>x.id!==id);save()}};

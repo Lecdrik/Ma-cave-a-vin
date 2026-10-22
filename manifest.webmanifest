@@ -1,7 +1,7 @@
 {
   "name": "Ma Cave à Vin",
   "short_name": "Ma Cave",
-  "description": "Gestion personnelle de cave à vin avec lecture des étiquettes",
+  "description": "Gestion de cave à vin, pineau et accords mets-vins",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#faf7f2",
