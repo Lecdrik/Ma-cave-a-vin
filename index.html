@@ -185,10 +185,10 @@ document.getElementById('syncLogout').addEventListener('click', async () => {
   const { error } = await supabaseClient.auth.signOut();
   syncStatus(error ? error.message : 'Déconnexion effectuée.');
 });
- function toCloudWine(w) {
+function toCloudWine(w, userId) {
   return {
     id: w.id,
-    user_id: null,
+    user_id: userId,
     name: w.name || 'Vin sans nom',
     producer: w.producer || null,
     vintage: w.vintage ? Number(w.vintage) : null,
@@ -197,17 +197,124 @@ document.getElementById('syncLogout').addEventListener('click', async () => {
     color: w.color || null,
     kind: w.kind || null,
     quantity: Number(w.quantity ?? 1),
-    drink_from: w.drink_from ? Number(w.drink_from) : null,
-    drink_until: w.drink_until ? Number(w.drink_until) : null,
+    drink_from: w.drinkFrom ? Number(w.drinkFrom) : null,
+    drink_until: w.drinkUntil ? Number(w.drinkUntil) : null,
     location: w.location || null,
-    purchase: w.purchase == null ? null : Number(w.purchase),
-    market_price: w.market_price == null ? null : Number(w.market_price),
-    price_checked: w.price_checked || null,
-    price_url: w.price_url || null,
+    purchase: w.purchase === '' || w.purchase == null
+      ? null : Number(w.purchase),
+    market_price: w.marketPrice === '' || w.marketPrice == null
+      ? null : Number(w.marketPrice),
+    price_checked: w.priceChecked || null,
+    price_url: w.priceUrl || null,
     notes: w.notes || null,
     updated_at: new Date().toISOString()
   };
 }
+
+function fromCloudWine(w) {
+  return {
+    id: w.id,
+    name: w.name || 'Vin sans nom',
+    producer: w.producer || '',
+    vintage: w.vintage ?? '',
+    appellation: w.appellation || '',
+    region: w.region || '',
+    color: w.color || 'Rouge',
+    kind: w.kind || '',
+    quantity: Number(w.quantity ?? 1),
+    drinkFrom: w.drink_from ?? '',
+    drinkUntil: w.drink_until ?? '',
+    location: w.location || '',
+    purchase: w.purchase ?? '',
+    marketPrice: w.market_price ?? '',
+    priceChecked: w.price_checked || '',
+    priceUrl: w.price_url || '',
+    notes: w.notes || '',
+    photo: ''
+  };
+}
+document.getElementById('syncUpload').addEventListener('click', async () => {
+  const { data: { user }, error: authError } =
+    await supabaseClient.auth.getUser();
+
+  if (authError || !user) {
+    syncStatus('Connecte-toi avant d’envoyer ta cave.');
+    return;
+  }
+
+  if (!confirm(
+    'Envoyer les bouteilles de cet appareil vers le cloud ? ' +
+    'Les bouteilles existantes dans le cloud seront mises à jour si leur identifiant correspond.'
+  )) return;
+
+  const localWines = JSON.parse(localStorage.getItem(KEY) || '[]');
+
+  if (!localWines.length) {
+    syncStatus('Aucune bouteille à envoyer depuis cet appareil.');
+    return;
+  }
+
+  syncStatus('Envoi de la cave en cours…');
+
+  const rows = localWines.map(w => toCloudWine(w, user.id));
+
+  const { error } = await supabaseClient
+    .from('wines')
+    .upsert(rows, { onConflict: 'id' });
+
+  if (error) {
+    syncStatus('Erreur lors de l’envoi : ' + error.message);
+    return;
+  }
+
+  syncStatus(localWines.length + ' fiche(s) envoyée(s) vers le cloud.');
+});
+
+document.getElementById('syncDownload').addEventListener('click', async () => {
+  const { data: { user }, error: authError } =
+    await supabaseClient.auth.getUser();
+
+  if (authError || !user) {
+    syncStatus('Connecte-toi avant de récupérer ta cave.');
+    return;
+  }
+
+  if (!confirm(
+    'Récupérer les bouteilles du cloud et les fusionner avec cette cave locale ?'
+  )) return;
+
+  syncStatus('Récupération de la cave en cours…');
+
+  const { data, error } = await supabaseClient
+    .from('wines')
+    .select('*')
+    .eq('user_id', user.id);
+
+  if (error) {
+    syncStatus('Erreur lors de la récupération : ' + error.message);
+    return;
+  }
+
+  const localWines = JSON.parse(localStorage.getItem(KEY) || '[]');
+  const merged = new Map(localWines.map(w => [w.id, w]));
+
+  (data || []).forEach(row => {
+    const cloudWine = fromCloudWine(row);
+    const localWine = merged.get(cloudWine.id);
+
+    merged.set(
+      cloudWine.id,
+      localWine ? { ...cloudWine, ...localWine } : cloudWine
+    );
+  });
+
+  wines = Array.from(merged.values());
+  localStorage.setItem(KEY, JSON.stringify(wines));
+  render();
+
+  syncStatus((data || []).length +
+    ' fiche(s) récupérée(s). La cave locale a été fusionnée.');
+});
 let wines=JSON.parse(localStorage.getItem(KEY)||'[]');
 let photoData='';
 const $=id=>document.getElementById(id);
