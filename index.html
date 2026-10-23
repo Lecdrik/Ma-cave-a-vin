@@ -94,6 +94,141 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
 </section>
 <section id="alerts" class="panel hidden">
  <h2>Alertes et sauvegarde</h2>
+ <div class="panel" style="margin-bottom:14px">
+  <h3>Synchronisation de ma cave</h3>
+  <p id="syncStatus" class="hint">Connecte-toi pour retrouver ta cave sur tes appareils.</p>
+
+  <div class="field">
+    <label for="syncEmail">Adresse e-mail</label>
+    <input id="syncEmail" type="email" autocomplete="username"
+      placeholder="Ton adresse e-mail" />
+  </div>
+
+  <div class="field">
+    <label for="syncPassword">Mot de passe Supabase</label>
+    <input id="syncPassword" type="password"
+      autocomplete="current-password" placeholder="Mot de passe" />
+  </div>
+
+  <div class="actions">
+    <button type="button" id="syncLogin">Se connecter</button>
+    <button type="button" class="secondary" id="syncLogout">
+     function toCloudWine(w) {
+  return {
+    id: w.id,
+    user_id: null,
+    name: w.name || 'Sans nom',
+    producer: w.producer || null,
+    vintage: w.vintage ? Number(w.vintage) : null,
+    appellation: w.appellation || null,
+    region: w.region || null,
+    color: w.color || null,
+    kind: w.kind || 'wine',
+    quantity: Number(w.quantity ?? 1),
+    drink_from: w.drinkFrom ? Number(w.drinkFrom) : null,
+    drink_until: w.drinkUntil ? Number(w.drinkUntil) : null,
+    location: w.location || null,
+    purchase: w.purchase === '' || w.purchase == null ? null : Number(w.purchase),
+    market_price: w.marketPrice === '' || w.marketPrice == null ? null : Number(w.marketPrice),
+    price_checked: w.priceChecked || null,
+    price_url: w.priceUrl || null,
+    notes: w.notes || null,
+    updated_at: new Date().toISOString()
+  };
+}
+
+document.getElementById('syncUpload').addEventListener('click', async () => {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    syncStatus('Connecte-toi avant d’envoyer ta cave.');
+    return;
+  }
+
+  if (!confirm(`Envoyer ${wines.length} bouteille(s) vers le cloud ?`)) return;
+
+  syncStatus('Envoi de la cave en cours…');
+
+     
+  const rows = wines.map(w => ({
+    ...toCloudWine(w),
+    user_id: user.id
+  }));
+
+  const { error } = await supabaseClient
+    .from('wines')
+    .upsert(rows, { onConflict: 'id' });
+
+  if (error) {
+    syncStatus('Erreur lors de l’envoi : ' + error.message);
+    return;
+  }
+
+  syncStatus(`${rows.length} bouteille(s) envoyée(s). Aucune bouteille distante n’a été supprimée.`);
+});
+
+document.getElementById('syncDownload').addEventListener('click', async () => {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    syncStatus('Connecte-toi avant de récupérer ta cave.');
+    return;
+  }
+
+  if (!confirm('Récupérer les bouteilles du cloud et les fusionner avec cette cave ?')) return;
+
+  syncStatus('Récupération de la cave en cours…');
+
+  const { data, error } = await supabaseClient
+    .from('wines')
+    .select('*')
+    .eq('user_id', user.id);
+
+  if (error) {
+    syncStatus('Erreur lors de la récupération : ' + error.message);
+    return;
+  }
+
+  const localById = new Map(wines.map(w => [String(w.id), w]));
+
+  for (const r of data) {
+    const existing = localById.get(String(r.id)) || {};
+
+    localById.set(String(r.id), {
+      ...existing,
+      id: r.id,
+      name: r.name,
+      producer: r.producer || '',
+      vintage: r.vintage == null ? '' : String(r.vintage),
+      appellation: r.appellation || '',
+      region: r.region || '',
+      color: r.color || '',
+      kind: r.kind || 'wine',
+      quantity: r.quantity ?? 1,
+      drinkFrom: r.drink_from == null ? '' : String(r.drink_from),
+      drinkUntil: r.drink_until == null ? '' : String(r.drink_until),
+      location: r.location || '',
+      purchase: r.purchase ?? '',
+      marketPrice: r.market_price ?? '',
+      priceChecked: r.price_checked || '',
+      priceUrl: r.price_url || '',
+      notes: r.notes || ''
+    });
+  }
+
+  wines = Array.from(localById.values());
+  localStorage.setItem(KEY, JSON.stringify(wines));
+
+  syncStatus(`${data.length} bouteille(s) récupérée(s). Recharge la page pour actualiser l’affichage.`);
+});
+     <div class="actions">
+  <button type="button" id="syncUpload">Envoyer ma cave vers le cloud</button>
+  <button type="button" class="secondary" id="syncDownload">Récupérer ma cave du cloud</button>
+</div>
+      Se déconnecter
+    </button>
+  </div>
+</div>
  <p>Les rappels locaux peuvent s'afficher si tu autorises les notifications et que l'application est ouverte. Le navigateur ne garantit pas des alertes programmées quand il est fermé.</p>
  <div class="actions"><button id="enableNotifications">Autoriser les notifications</button><button id="checkAlerts" class="secondary">Vérifier les vins à boire</button></div>
  <p id="notifyStatus" class="hint"></p>
@@ -109,8 +244,50 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
 <div class="foot">Version 1.4 · Données conservées dans le stockage local du navigateur. Effacer les données du navigateur peut supprimer l'inventaire : utilise l'export JSON.</div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const KEY='ma-cave-a-vin-v1';
+const SUPABASE_URL = 'https://txdlqhlyvsyrxjqfyind.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_kzUNvGF2HhsOTtMS9VUllw_KI1kdjyf';
+ const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+const syncStatus = (message) => {
+  const el = document.getElementById('syncStatus');
+  if (el) el.textContent = message;
+};
+
+document.getElementById('syncLogin').addEventListener('click', async () => {
+  const email = document.getElementById('syncEmail').value.trim();
+  const password = document.getElementById('syncPassword').value;
+
+  if (!email || !password) {
+    syncStatus('Saisis ton adresse e-mail et ton mot de passe.');
+    return;
+  }
+
+  syncStatus('Connexion en cours…');
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    syncStatus('Connexion impossible : ' + error.message);
+    return;
+  }
+
+  document.getElementById('syncPassword').value = '';
+  syncStatus('Connexion réussie. La synchronisation des bouteilles reste à configurer.');
+});
+
+document.getElementById('syncLogout').addEventListener('click', async () => {
+  const { error } = await supabaseClient.auth.signOut();
+  syncStatus(error ? error.message : 'Déconnexion effectuée.');
+});
 let wines=JSON.parse(localStorage.getItem(KEY)||'[]');
 let photoData='';
 const $=id=>document.getElementById(id);
