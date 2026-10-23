@@ -112,122 +112,19 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
 
   <div class="actions">
     <button type="button" id="syncLogin">Se connecter</button>
-    <button type="button" class="secondary" id="syncLogout">
-     function toCloudWine(w) {
-  return {
-    id: w.id,
-    user_id: null,
-    name: w.name || 'Sans nom',
-    producer: w.producer || null,
-    vintage: w.vintage ? Number(w.vintage) : null,
-    appellation: w.appellation || null,
-    region: w.region || null,
-    color: w.color || null,
-    kind: w.kind || 'wine',
-    quantity: Number(w.quantity ?? 1),
-    drink_from: w.drinkFrom ? Number(w.drinkFrom) : null,
-    drink_until: w.drinkUntil ? Number(w.drinkUntil) : null,
-    location: w.location || null,
-    purchase: w.purchase === '' || w.purchase == null ? null : Number(w.purchase),
-    market_price: w.marketPrice === '' || w.marketPrice == null ? null : Number(w.marketPrice),
-    price_checked: w.priceChecked || null,
-    price_url: w.priceUrl || null,
-    notes: w.notes || null,
-    updated_at: new Date().toISOString()
-  };
-}
-
-document.getElementById('syncUpload').addEventListener('click', async () => {
-  const { data: { user } } = await supabaseClient.auth.getUser();
-
-  if (!user) {
-    syncStatus('Connecte-toi avant d’envoyer ta cave.');
-    return;
-  }
-
-  if (!confirm(`Envoyer ${wines.length} bouteille(s) vers le cloud ?`)) return;
-
-  syncStatus('Envoi de la cave en cours…');
-
-     
-  const rows = wines.map(w => ({
-    ...toCloudWine(w),
-    user_id: user.id
-  }));
-
-  const { error } = await supabaseClient
-    .from('wines')
-    .upsert(rows, { onConflict: 'id' });
-
-  if (error) {
-    syncStatus('Erreur lors de l’envoi : ' + error.message);
-    return;
-  }
-
-  syncStatus(`${rows.length} bouteille(s) envoyée(s). Aucune bouteille distante n’a été supprimée.`);
-});
-
-document.getElementById('syncDownload').addEventListener('click', async () => {
-  const { data: { user } } = await supabaseClient.auth.getUser();
-
-  if (!user) {
-    syncStatus('Connecte-toi avant de récupérer ta cave.');
-    return;
-  }
-
-  if (!confirm('Récupérer les bouteilles du cloud et les fusionner avec cette cave ?')) return;
-
-  syncStatus('Récupération de la cave en cours…');
-
-  const { data, error } = await supabaseClient
-    .from('wines')
-    .select('*')
-    .eq('user_id', user.id);
-
-  if (error) {
-    syncStatus('Erreur lors de la récupération : ' + error.message);
-    return;
-  }
-
-  const localById = new Map(wines.map(w => [String(w.id), w]));
-
-  for (const r of data) {
-    const existing = localById.get(String(r.id)) || {};
-
-    localById.set(String(r.id), {
-      ...existing,
-      id: r.id,
-      name: r.name,
-      producer: r.producer || '',
-      vintage: r.vintage == null ? '' : String(r.vintage),
-      appellation: r.appellation || '',
-      region: r.region || '',
-      color: r.color || '',
-      kind: r.kind || 'wine',
-      quantity: r.quantity ?? 1,
-      drinkFrom: r.drink_from == null ? '' : String(r.drink_from),
-      drinkUntil: r.drink_until == null ? '' : String(r.drink_until),
-      location: r.location || '',
-      purchase: r.purchase ?? '',
-      marketPrice: r.market_price ?? '',
-      priceChecked: r.price_checked || '',
-      priceUrl: r.price_url || '',
-      notes: r.notes || ''
-    });
-  }
-
-  wines = Array.from(localById.values());
-  localStorage.setItem(KEY, JSON.stringify(wines));
-
-  syncStatus(`${data.length} bouteille(s) récupérée(s). Recharge la page pour actualiser l’affichage.`);
-});
-     <div class="actions">
-  <button type="button" id="syncUpload">Envoyer ma cave vers le cloud</button>
-  <button type="button" class="secondary" id="syncDownload">Récupérer ma cave du cloud</button>
+<button type="button" class="secondary" id="syncLogout">
+  Se déconnecter
+</button>
 </div>
-      Se déconnecter
-    </button>
-  </div>
+
+<div class="actions">
+  <button type="button" id="syncUpload">
+    Envoyer ma cave vers le cloud
+  </button>
+  <button type="button" class="secondary" id="syncDownload">
+    Récupérer ma cave du cloud
+  </button>
+</div>
 </div>
  <p>Les rappels locaux peuvent s'afficher si tu autorises les notifications et que l'application est ouverte. Le navigateur ne garantit pas des alertes programmées quand il est fermé.</p>
  <div class="actions"><button id="enableNotifications">Autoriser les notifications</button><button id="checkAlerts" class="secondary">Vérifier les vins à boire</button></div>
@@ -288,6 +185,29 @@ document.getElementById('syncLogout').addEventListener('click', async () => {
   const { error } = await supabaseClient.auth.signOut();
   syncStatus(error ? error.message : 'Déconnexion effectuée.');
 });
+ function toCloudWine(w) {
+  return {
+    id: w.id,
+    user_id: null,
+    name: w.name || 'Vin sans nom',
+    producer: w.producer || null,
+    vintage: w.vintage ? Number(w.vintage) : null,
+    appellation: w.appellation || null,
+    region: w.region || null,
+    color: w.color || null,
+    kind: w.kind || null,
+    quantity: Number(w.quantity ?? 1),
+    drink_from: w.drink_from ? Number(w.drink_from) : null,
+    drink_until: w.drink_until ? Number(w.drink_until) : null,
+    location: w.location || null,
+    purchase: w.purchase == null ? null : Number(w.purchase),
+    market_price: w.market_price == null ? null : Number(w.market_price),
+    price_checked: w.price_checked || null,
+    price_url: w.price_url || null,
+    notes: w.notes || null,
+    updated_at: new Date().toISOString()
+  };
+}
 let wines=JSON.parse(localStorage.getItem(KEY)||'[]');
 let photoData='';
 const $=id=>document.getElementById(id);
