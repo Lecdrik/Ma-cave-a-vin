@@ -370,25 +370,94 @@ function clearForm(){ $('wineForm').reset();$('wineId').value='';$('quantity').v
 function switchTab(tab){document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));$(tab).classList.remove('hidden');document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));}
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 $('labelPhoto').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{photoData=r.result;$('photoPreview').innerHTML='<img alt="Aperçu de l’étiquette" style="max-width:220px;max-height:260px;border-radius:8px" src="'+photoData+'">';$('ocrStatus').textContent='Photo prête. Appuie sur « Lire l’étiquette » pour essayer de reconnaître le texte.'};r.readAsDataURL(f)});
-$('readLabel').addEventListener('click',async()=>{
- const file=$('labelPhoto').files[0];
- if(!file){$('ocrStatus').textContent='Prends ou sélectionne d’abord une photo de l’étiquette.';return}
- if(!window.Tesseract){$('ocrStatus').textContent='Le moteur OCR n’a pas pu être chargé. Vérifie la connexion Internet puis recharge la page.';return}
- const btn=$('readLabel');btn.disabled=true;
- try{
-  $('ocrStatus').textContent='Chargement du moteur de lecture… cela peut prendre un peu de temps au premier usage.';
-  const worker=await Tesseract.createWorker('fra',1,{logger:m=>{if(m.status==='recognizing text')$('ocrStatus').textContent='Lecture de l’étiquette : '+Math.round((m.progress||0)*100)+' %';}});
-  const result=await worker.recognize(file);await worker.terminate();
-  const raw=(result.data.text||'').split(/\r?\n/).map(x=>x.trim()).filter(x=>x.length>1);
-  if(!raw.length){$('ocrStatus').textContent='Aucun texte lisible détecté. Essaie une photo plus nette, sans reflet, et bien cadrée.';return}
-  const vintageMatch=(result.data.text.match(/\b(?:19|20)\d{2}\b/)||[])[0];
-  const ignore=/^(vin|wine|appellation|mis en bouteille|produit de france|contient des sulfites|75 cl|750 ml|alc\.?|vol\.?|%|france|rouge|blanc|rosé)$/i;
-  const useful=raw.filter(x=>!ignore.test(x)&&!/^\d+[,.]?\d*\s*(cl|ml|%)/i.test(x));
-  if(!$('name').value.trim()&&useful.length)$('name').value=useful[0].slice(0,100);
-  if(vintageMatch&&!$('vintage').value)$('vintage').value=vintageMatch;
-  if(!$('producer').value.trim()&&useful.length>1)$('producer').value=useful[1].slice(0,100);
-  $('ocrStatus').textContent='Lecture terminée. Vérifie et corrige les champs proposés : la reconnaissance peut se tromper. Texte détecté : '+result.data.text.replace(/\s+/g,' ').trim().slice(0,450);
- }catch(err){$('ocrStatus').textContent='La lecture a échoué. Réessaie avec une photo plus nette et une connexion Internet.';console.error(err)}finally{btn.disabled=false}
+$('readLabel').addEventListener('click', async () => {
+  const file = $('labelPhoto').files[0];
+
+  if (!file) {
+    $('ocrStatus').textContent =
+      'Prends ou sélectionne d’abord une photo de l’étiquette.';
+    return;
+  }
+
+  if (!window.Tesseract) {
+    $('ocrStatus').textContent =
+      'Moteur OCR indisponible. Vérifie Internet puis recharge la page.';
+    return;
+  }
+
+  const btn = $('readLabel');
+  btn.disabled = true;
+  let worker;
+
+  try {
+    $('ocrStatus').textContent =
+      'Lecture de l’étiquette en cours…';
+
+    worker = await Tesseract.createWorker('fra', 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          $('ocrStatus').textContent =
+            'Lecture : ' + Math.round((m.progress || 0) * 100) + ' %';
+        }
+      }
+    });
+
+    const result = await worker.recognize(file);
+    const text = result.data.text || '';
+    const lines = text
+      .split(/\r?\n/)
+      .map(s => s.replace(/\s+/g, ' ').trim())
+      .filter(s => s.length >= 3);
+
+    if (!lines.length) {
+      $('ocrStatus').textContent =
+        'Aucun texte lisible. Essaie une photo plus nette, sans reflet.';
+      return;
+    }
+
+    // Cherche un millésime plausible sans remplir le champ s'il est déjà renseigné.
+    const years = [...text.matchAll(/\b(?:19\d{2}|20[0-2]\d)\b/g)]
+      .map(m => Number(m[0]))
+      .filter(y => y >= 1900 && y <= new Date().getFullYear());
+
+    if (!$('vintage').value && years.length) {
+      $('vintage').value = years[0];
+    }
+
+    // Écarte les mentions courantes qui ne sont généralement pas un nom de vin.
+    const excluded = /^(vin|wine|appellation|appellation d'origine contrôlée|aoc|aop|indication géographique protégée|mis en bouteille|mis en bouteille au domaine|produit de france|produit en france|contient des sulfites|75 cl|750 ml|france|rouge|blanc|rosé|bio|organic)$/i;
+
+    const candidates = lines.filter(line =>
+      !excluded.test(line) &&
+      !/\b(?:19|20)\d{2}\b/.test(line) &&
+      !/^\d+[,.]?\d*\s*(cl|ml|%)/i.test(line) &&
+      !/^(alc(?:ool)?\.?|vol\.?|% vol)/i.test(line) &&
+      !/^(eau|ingrédients|nutrition|consommer avec modération)/i.test(line)
+    );
+
+    // Préremplit uniquement les champs vides. Les suggestions restent à vérifier.
+    if (!$('name').value.trim() && candidates.length) {
+      $('name').value = candidates[0].slice(0, 100);
+    }
+
+    if (!$('producer').value.trim() && candidates.length > 1) {
+      $('producer').value = candidates[1].slice(0, 100);
+    }
+
+    $('ocrStatus').textContent =
+      'Lecture terminée. Vérifie les champs proposés : le nom et le domaine peuvent être inversés. Texte reconnu : ' +
+      text.replace(/\s+/g, ' ').trim().slice(0, 600);
+
+  } catch (err) {
+    console.error(err);
+    $('ocrStatus').textContent =
+      'Échec de la lecture. Réessaie avec une photo nette et une connexion Internet.';
+  } finally {
+    if (worker) {
+      try { await worker.terminate(); } catch (e) {}
+    }
+    btn.disabled = false;
+  }
 });
 $('wineForm').addEventListener('submit',e=>{
  e.preventDefault();const id=$('wineId').value||crypto.randomUUID();
