@@ -67,7 +67,27 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
   <div class="actions" style="margin:0 0 12px"><button type="button" class="secondary" id="findPrice">Comparer les prix sur Internet</button><button type="button" class="secondary" id="findWine">Trouver ce vin et des alternatives</button></div>
   <p class="hint">Ces boutons ouvrent des recherches web. Les prix doivent être vérifiés sur les sites des vendeurs (frais de livraison et millésime compris) : ils ne sont pas récupérés automatiquement.</p>
   <div class="field"><label for="notes">Notes / accord mets-vins</label><textarea id="notes" placeholder="Température, accord, conseil du caviste…"></textarea></div>
-  <div class="field"><label for="labelPhoto">Photo de l'étiquette (facultatif)</label><input id="labelPhoto" type="file" accept="image/*" capture="environment"><div class="hint">Prends une photo nette, bien éclairée et cadrée sur l'étiquette. Tu peux ensuite lancer la lecture automatique du texte.</div><div id="photoPreview"></div><div class="actions"><button type="button" class="secondary" id="readLabel">Lire l'étiquette et remplir les champs</button></div><p id="ocrStatus" class="hint" aria-live="polite">La lecture se fait sur ton appareil. Au premier usage, le moteur OCR français est téléchargé depuis Internet. Vérifie les champs avant d'enregistrer.</p></div>
+  <div class="field">
+  <label for="labelPhoto">Photo de face — illustration de la bouteille</label>
+  <input id="labelPhoto" type="file" accept="image/*" capture="environment">
+  <div class="hint">Photographie la face avant de la bouteille. Cette photo servira d’illustration dans ta cave.</div>
+  <div id="photoPreview"></div>
+</div>
+
+<div class="field">
+  <label for="backLabelPhoto">Photo arrière — informations complémentaires</label>
+  <input id="backLabelPhoto" type="file" accept="image/*" capture="environment">
+  <div class="hint">Photographie la contre-étiquette pour lire le producteur, l’appellation et les autres informations.</div>
+  <div id="backPhotoPreview"></div>
+</div>
+
+<div class="actions" style="margin-bottom:10px">
+  <button type="button" class="secondary" id="readLabel">Lire les deux étiquettes et remplir les champs</button>
+</div>
+
+<p id="ocrStatus" class="hint" aria-live="polite">
+  Tu peux fournir une ou deux photos. Vérifie les informations reconnues avant d’enregistrer.
+</p>
   <div class="actions"><button type="submit">Enregistrer le vin</button><button type="button" class="secondary" id="resetForm">Effacer le formulaire</button></div>
  </form>
 </section>
@@ -317,6 +337,7 @@ document.getElementById('syncDownload').addEventListener('click', async () => {
 });
 let wines=JSON.parse(localStorage.getItem(KEY)||'[]');
 let photoData='';
+let backPhotoData='';
 const $=id=>document.getElementById(id);
 const year=new Date().getFullYear();
 const fmt=n=>Number(n||0).toLocaleString('fr-FR');
@@ -366,16 +387,51 @@ function render(){
  }).join(''):'<div class="empty">Aucun vin ne correspond. Ajoute ton premier vin dans l’onglet « Ajouter un vin ».</div>';
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function clearForm(){ $('wineForm').reset();$('wineId').value='';$('quantity').value=1;$('formTitle').textContent='Ajouter une bouteille ou un lot';photoData='';$('photoPreview').innerHTML='';}
+function clearForm(){ $('wineForm').reset();$('wineId').value='';$('quantity').value=1;$('formTitle').textContent='Ajouter une bouteille ou un lot';photoData='';backPhotoData='';
+$('backLabelPhoto').value='';
+$('backPhotoPreview').innerHTML='';$('photoPreview').innerHTML='';}
 function switchTab(tab){document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));$(tab).classList.remove('hidden');document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));}
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
-$('labelPhoto').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{photoData=r.result;$('photoPreview').innerHTML='<img alt="Aperçu de l’étiquette" style="max-width:220px;max-height:260px;border-radius:8px" src="'+photoData+'">';$('ocrStatus').textContent='Photo prête. Appuie sur « Lire l’étiquette » pour essayer de reconnaître le texte.'};r.readAsDataURL(f)});
-$('readLabel').addEventListener('click', async () => {
-  const file = $('labelPhoto').files[0];
+$('labelPhoto').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
 
-  if (!file) {
+  const r = new FileReader();
+  r.onload = () => {
+    photoData = r.result;
+    $('photoPreview').innerHTML =
+      '<img alt="Photo de face" style="max-width:220px;max-height:260px;border-radius:8px" src="' +
+      photoData + '">';
+
     $('ocrStatus').textContent =
-      'Prends ou sélectionne d’abord une photo de l’étiquette.';
+      'Photo de face prête. Tu peux aussi ajouter la photo arrière.';
+  };
+  r.readAsDataURL(f);
+});
+
+$('backLabelPhoto').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+
+  const r = new FileReader();
+  r.onload = () => {
+    backPhotoData = r.result;
+    $('backPhotoPreview').innerHTML =
+      '<img alt="Photo arrière" style="max-width:220px;max-height:260px;border-radius:8px" src="' +
+      backPhotoData + '">';
+
+    $('ocrStatus').textContent =
+      'Photo arrière prête. Appuie sur le bouton de lecture pour analyser les étiquettes.';
+  };
+  r.readAsDataURL(f);
+});
+$('readLabel').addEventListener('click', async () => {
+  const frontFile = $('labelPhoto').files[0];
+  const backFile = $('backLabelPhoto').files[0];
+
+  if (!frontFile && !backFile) {
+    $('ocrStatus').textContent =
+      'Prends au moins une photo de la bouteille.';
     return;
   }
 
@@ -390,17 +446,93 @@ $('readLabel').addEventListener('click', async () => {
   let worker;
 
   try {
-    $('ocrStatus').textContent =
-      'Lecture de l’étiquette en cours…';
-
     worker = await Tesseract.createWorker('fra', 1, {
       logger: m => {
         if (m.status === 'recognizing text') {
           $('ocrStatus').textContent =
-            'Lecture : ' + Math.round((m.progress || 0) * 100) + ' %';
+            'Lecture des étiquettes : ' +
+            Math.round((m.progress || 0) * 100) + ' %';
         }
       }
     });
+
+    let frontText = '';
+    let backText = '';
+
+    if (frontFile) {
+      $('ocrStatus').textContent = 'Lecture de la photo de face…';
+      const result = await worker.recognize(frontFile);
+      frontText = result.data.text || '';
+    }
+
+    if (backFile) {
+      $('ocrStatus').textContent = 'Lecture de la photo arrière…';
+      const result = await worker.recognize(backFile);
+      backText = result.data.text || '';
+    }
+
+    const allText = [frontText, backText].filter(Boolean).join('\n');
+    const getLines = text => text.split(/\r?\n/)
+      .map(s => s.replace(/\s+/g, ' ').trim())
+      .filter(s => s.length >= 3);
+
+    const frontLines = getLines(frontText);
+    const backLines = getLines(backText);
+
+    const excluded = /^(vin|wine|appellation|aoc|aop|mis en bouteille|produit de france|produit en france|contient des sulfites|75 cl|750 ml|france|rouge|blanc|rosé|bio|organic)$/i;
+
+    const cleanLines = lines => lines.filter(line =>
+      !excluded.test(line) &&
+      !/\b(?:19\d{2}|20[0-2]\d)\b/.test(line) &&
+      !/^\d+[,.]?\d*\s*(cl|ml|%)/i.test(line) &&
+      !/^(alc(?:ool)?\.?|vol\.?|% vol)/i.test(line)
+    );
+
+    const frontCandidates = cleanLines(frontLines);
+    const backCandidates = cleanLines(backLines);
+    const allCandidates = cleanLines(getLines(allText));
+
+    const years = [...allText.matchAll(/\b(?:19\d{2}|20[0-2]\d)\b/g)]
+      .map(m => Number(m[0]))
+      .filter(y => y >= 1900 && y <= new Date().getFullYear());
+
+    if (!$('vintage').value && years.length) {
+      $('vintage').value = years[0];
+    }
+
+    if (!$('name').value.trim()) {
+      const candidate = frontCandidates[0] || allCandidates[0];
+      if (candidate) $('name').value = candidate.slice(0, 100);
+    }
+
+    if (!$('producer').value.trim()) {
+      const candidate =
+        backCandidates.find(line =>
+          /domaine|château|clos|maison|vignoble|propriétaire|producteur|mis en bouteille/i.test(line)
+        ) ||
+        backCandidates[0] ||
+        frontCandidates[1];
+
+      if (candidate) $('producer').value = candidate.slice(0, 100);
+    }
+
+    $('ocrStatus').textContent =
+      (frontText || backText
+        ? 'Lecture terminée. Vérifie et corrige les champs avant l’enregistrement. '
+        : 'Aucun texte détecté. ') +
+      'Texte reconnu : ' + allText.replace(/\s+/g, ' ').trim().slice(0, 700);
+
+  } catch (err) {
+    console.error(err);
+    $('ocrStatus').textContent =
+      'La lecture a échoué. Réessaie avec une photo nette et une connexion Internet.';
+  } finally {
+    if (worker) {
+      try { await worker.terminate(); } catch (e) {}
+    }
+    btn.disabled = false;
+  }
+});
 
     const result = await worker.recognize(file);
     const text = result.data.text || '';
@@ -459,11 +591,45 @@ $('readLabel').addEventListener('click', async () => {
     btn.disabled = false;
   }
 });
-$('wineForm').addEventListener('submit',e=>{
- e.preventDefault();const id=$('wineId').value||crypto.randomUUID();
- const old=wines.find(w=>w.id===id);
- const w={id,name:$('name').value.trim(),producer:$('producer').value.trim(),appellation:$('appellation').value.trim(),vintage:$('vintage').value, color:$('color').value,quantity:Math.max(0,Number($('quantity').value)),drinkFrom:$('drinkFrom').value,drinkUntil:$('drinkUntil').value,location:$('location').value.trim(),purchase:$('purchase').value,marketPrice:$('marketPrice').value,priceUrl:$('priceUrl').value.trim(),priceChecked:$('priceChecked').value,notes:$('notes').value.trim(),photo:photoData||(old?.photo||'')};
- if(old)wines=wines.map(x=>x.id===id?w:x);else wines.push(w);save();clearForm();switchTab('inventory');
+$('wineForm').addEventListener('submit', e => {
+  e.preventDefault();
+
+  const id = $('wineId').value || crypto.randomUUID();
+  const old = wines.find(w => w.id === id);
+
+  const w = {
+    id,
+    name: $('name').value.trim(),
+    producer: $('producer').value.trim(),
+    appellation: $('appellation').value.trim(),
+    vintage: $('vintage').value,
+    color: $('color').value,
+    quantity: Math.max(0, Number($('quantity').value)),
+    drinkFrom: $('drinkFrom').value,
+    drinkUntil: $('drinkUntil').value,
+    location: $('location').value.trim(),
+    purchase: $('purchase').value,
+    marketPrice: $('marketPrice').value,
+    priceUrl: $('priceUrl').value.trim(),
+    priceChecked: $('priceChecked').value,
+    notes: $('notes').value.trim(),
+
+    // Photo de face : conserve l'ancienne si aucune nouvelle photo n'est choisie.
+    photo: photoData || old?.photo || '',
+
+    // Photo arrière : conserve l'ancienne si aucune nouvelle photo n'est choisie.
+    backPhoto: backPhotoData || old?.backPhoto || ''
+  };
+
+  if (old) {
+    wines = wines.map(x => x.id === id ? w : x);
+  } else {
+    wines.push(w);
+  }
+
+  save();
+  clearForm();
+  switchTab('inventory');
 });
 $('pineauForm').addEventListener('submit',e=>{
  e.preventDefault();
@@ -504,7 +670,39 @@ function recommendPairing(){
  $('pairingResult').innerHTML='<div class="notice"><strong>Notre meilleure piste :</strong> '+esc(best.w.name)+' ('+esc([best.w.producer,best.w.appellation,best.w.vintage,best.w.color].filter(Boolean).join(' · '))+') — '+fmt(best.w.quantity)+' bouteille(s) disponible(s).<br>'+esc(matched?matched.reason:'Je n’ai pas reconnu de famille de plat précise : voici une suggestion basée sur les informations de ta cave. Pour affiner, précise la sauce ou l’accompagnement.')+'</div>'+scored.slice(1).map(x=>'<article class="wine" style="margin-top:8px"><div><h3>Autre possibilité : '+esc(x.w.name)+'</h3><p>'+esc([x.w.producer,x.w.appellation,x.w.vintage,x.w.color].filter(Boolean).join(' · '))+'</p><span class="pill">'+fmt(x.w.quantity)+' bouteille(s)</span></div></article>').join('');
 }
 $('recommendWine').addEventListener('click',recommendPairing);
-window.editWine=id=>{const w=wines.find(x=>x.id===id);if(!w)return;switchTab('add');$('wineId').value=w.id;['name','producer','appellation','vintage','color','quantity','drinkFrom','drinkUntil','location','purchase','marketPrice','priceUrl','priceChecked','notes'].forEach(k=>$(k).value=w[k]??(k==='quantity'?1:''));photoData=w.photo||'';$('photoPreview').innerHTML=photoData?'<img alt="Étiquette" style="max-width:160px;max-height:180px;border-radius:8px" src="'+photoData+'">':'';$('formTitle').textContent='Modifier le vin'};
+window.editWine = id => {
+  const w = wines.find(x => x.id === id);
+  if (!w) return;
+
+  switchTab('add');
+  $('wineId').value = w.id;
+
+  [
+    'name', 'producer', 'appellation', 'vintage', 'color',
+    'quantity', 'drinkFrom', 'drinkUntil', 'location',
+    'purchase', 'marketPrice', 'priceUrl', 'priceChecked', 'notes'
+  ].forEach(k => {
+    $(k).value = w[k] ?? (k === 'quantity' ? 1 : '');
+  });
+
+  // Restaurer les deux photos déjà enregistrées.
+  photoData = w.photo || '';
+  backPhotoData = w.backPhoto || '';
+
+  // Vider les sélecteurs de fichiers sans effacer les photos existantes.
+  $('labelPhoto').value = '';
+  $('backLabelPhoto').value = '';
+
+  $('photoPreview').innerHTML = photoData
+    ? '<img alt="Photo de face" style="max-width:220px;max-height:260px;border-radius:8px" src="' + photoData + '">'
+    : '';
+
+  $('backPhotoPreview').innerHTML = backPhotoData
+    ? '<img alt="Photo arrière" style="max-width:220px;max-height:260px;border-radius:8px" src="' + backPhotoData + '">'
+    : '';
+
+  $('formTitle').textContent = 'Modifier le vin';
+};
 window.drinkWine=id=>{const w=wines.find(x=>x.id===id);if(!w)return;if(w.quantity>1)w.quantity--;else if(confirm('C’est la dernière bouteille. La retirer de la cave ?'))wines=wines.filter(x=>x.id!==id);save()};
 window.deleteWine=id=>{if(confirm('Supprimer ce vin de l’inventaire ?')){wines=wines.filter(x=>x.id!==id);save()}};
 $('resetForm').onclick=clearForm;$('search').oninput=render;$('filter').onchange=render;
