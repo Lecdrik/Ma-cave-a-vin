@@ -227,6 +227,11 @@ function toCloudWine(w, userId) {
     price_checked: w.priceChecked || null,
     price_url: w.priceUrl || null,
     notes: w.notes || null,
+
+    // Références des photos stockées dans Supabase Storage.
+    bottle_photo_url: w.bottlePhotoUrl || null,
+    labbel_photo_url: w.labbelPhotoUrl || null,
+
     updated_at: new Date().toISOString()
   };
 }
@@ -250,7 +255,13 @@ function fromCloudWine(w) {
     priceChecked: w.price_checked || '',
     priceUrl: w.price_url || '',
     notes: w.notes || '',
-    photo: ''
+
+    // Références des photos récupérées depuis Supabase.
+    bottlePhotoUrl: w.bottle_photo_url || '',
+    labbelPhotoUrl: w.labbel_photo_url || '',
+
+    // Compatibilité avec l'ancien affichage de la photo de face.
+    photo: w.bottle_photo_url || w.photo_url || ''
   };
 }
 document.getElementById('syncUpload').addEventListener('click', async () => {
