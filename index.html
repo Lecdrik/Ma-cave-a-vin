@@ -263,42 +263,48 @@ function fromCloudWine(w) {
     // Compatibilité avec l'ancien affichage de la photo de face.
     photo: w.bottle_photo_url || w.photo_url || ''
   };
+ }
+async function uploadWinePhoto(fileData, userId, wineId, photoType) {
+  if (!fileData || !fileData.startsWith('data:')) {
+    return fileData || null;
+  }
+
+  const response = await fetch(fileData);
+  const blob = await response.blob();
+
+  const extension = blob.type === 'image/png' ? 'png'
+    : blob.type === 'image/webp' ? 'webp'
+    : 'jpg';
+
+  const path = `${userId}/${wineId}/${photoType}.${extension}`;
+
+  const { error } = await supabaseClient.storage
+    .from('wine-photos')
+    .upload(path, blob, {
+      upsert: true,
+      contentType: blob.type || 'image/jpeg'
+    });
+if (error) throw error;
+
+  // Le stockage reste privé : on retourne le chemin du fichier.
+  return path;
 }
-document.getElementById('syncUpload').addEventListener('click', async () => {
-  const { data: { user }, error: authError } =
-    await supabaseClient.auth.getUser();
 
-  if (authError || !user) {
-    syncStatus('Connecte-toi avant d’envoyer ta cave.');
-    return;
+      .upsert(rows, { onConflict: 'id' });
+
+    if (error) {
+      syncStatus('Erreur lors de l’envoi : ' + error.message);
+      return;
+    }
+
+    syncStatus(
+      localWines.length +
+      ' fiche(s) envoyée(s) vers le cloud avec leurs photos disponibles.'
+    );
+  } catch (err) {
+    console.error(err);
+    syncStatus('Erreur pendant l’envoi des photos : ' + err.message);
   }
-
-  if (!confirm(
-    'Envoyer les bouteilles de cet appareil vers le cloud ? ' +
-    'Les bouteilles existantes dans le cloud seront mises à jour si leur identifiant correspond.'
-  )) return;
-
-  const localWines = JSON.parse(localStorage.getItem(KEY) || '[]');
-
-  if (!localWines.length) {
-    syncStatus('Aucune bouteille à envoyer depuis cet appareil.');
-    return;
-  }
-
-  syncStatus('Envoi de la cave en cours…');
-
-  const rows = localWines.map(w => toCloudWine(w, user.id));
-
-  const { error } = await supabaseClient
-    .from('wines')
-    .upsert(rows, { onConflict: 'id' });
-
-  if (error) {
-    syncStatus('Erreur lors de l’envoi : ' + error.message);
-    return;
-  }
-
-  syncStatus(localWines.length + ' fiche(s) envoyée(s) vers le cloud.');
 });
 
 document.getElementById('syncDownload').addEventListener('click', async () => {
@@ -333,11 +339,21 @@ document.getElementById('syncDownload').addEventListener('click', async () => {
     const cloudWine = fromCloudWine(row);
     const localWine = merged.get(cloudWine.id);
 
-    merged.set(
-      cloudWine.id,
-      localWine ? { ...cloudWine, ...localWine } : cloudWine
-    );
-  });
+  merged.set(
+  cloudWine.id,
+  localWine
+    ? {
+        ...cloudWine,
+        ...localWine,
+        photo: localWine.photo || cloudWine.photo || '',
+        backPhoto: localWine.backPhoto || cloudWine.backPhoto || '',
+        bottlePhotoUrl:
+          cloudWine.bottlePhotoUrl || localWine.bottlePhotoUrl || '',
+        labbelPhotoUrl:
+          cloudWine.labbelPhotoUrl || localWine.labbelPhotoUrl || ''
+      }
+    : cloudWine
+);
 
   wines = Array.from(merged.values());
   localStorage.setItem(KEY, JSON.stringify(wines));
@@ -376,7 +392,28 @@ function inferRegion(w){const a=String(w.appellation||'').toLocaleLowerCase('fr'
  ];return (rules.find(([r,keys])=>keys.some(k=>t.includes(k)))||[])[0]||'Origine à préciser'}
 const regionPlaces={'Bordeaux':[44.84,-0.58],'Bourgogne':[47.02,4.84],'Champagne':[49.04,3.96],'Vallée du Rhône':[44.05,4.83],'Val de Loire':[47.26,-0.08],'Alsace':[48.25,7.44],'Provence':[43.52,5.45],'Languedoc-Roussillon':[43.60,3.88],'Sud-Ouest':[44.45,0.15],'Jura et Savoie':[46.75,5.75],'Charentes (Pineau)':[45.70,-0.33]};
 function renderRegions(){const counts={};wines.filter(w=>Number(w.quantity)>0).forEach(w=>{const r=inferRegion(w);counts[r]=(counts[r]||0)+Number(w.quantity||0)});const known=Object.keys(counts).filter(r=>r!=='Origine à préciser');$('regionList').innerHTML=known.map(r=>{const xy=regionPlaces[r];const q=encodeURIComponent(r+' vignoble France');const url=xy?`https://www.openstreetmap.org/?mlat=${xy[0]}&mlon=${xy[1]}#map=8/${xy[0]}/${xy[1]}`:`https://www.openstreetmap.org/search?query=${q}`;return `<span class="region-chip"><a href="${url}" target="_blank" rel="noopener">${esc(r)} · ${fmt(counts[r])} bouteille(s) ↗</a></span>`}).join('');$('regionEmpty').classList.toggle('hidden',known.length>0);if(counts['Origine à préciser'])$('regionList').insertAdjacentHTML('beforeend',`<span class="region-chip">Origine à préciser · ${fmt(counts['Origine à préciser'])} bouteille(s)</span>`)}
-function render(){
+async function getWinePhotoUrl(path) {
+  if (!path) return '';
+
+  // Une photo locale déjà disponible sous forme d'image.
+  if (path.startsWith('data:') || path.startsWith('blob:') ||
+      path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+
+  // Une photo stockée dans le bucket privé Supabase.
+  const { data, error } = await supabaseClient.storage
+    .from('wine-photos')
+    .createSignedUrl(path, 3600);
+
+  if (error) {
+    console.error('Impossible de charger la photo :', error.message);
+    return '';
+  }
+
+  return data.signedUrl;
+}
+ function render(){
  const total=wines.reduce((a,w)=>a+Number(w.quantity||0),0);
  $('statBottles').textContent=fmt(total);
  $('statReady').textContent=fmt(wines.filter(w=>['ready','late'].includes(status(w).key)).reduce((a,w)=>a+Number(w.quantity||0),0));
