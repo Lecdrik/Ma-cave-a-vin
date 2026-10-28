@@ -290,6 +290,76 @@ if (error) throw error;
   return path;
 }
 
+
+document.getElementById('syncUpload').addEventListener('click', async () => {
+  try {
+    const {
+      data: { user },
+      error: authError
+    } = await supabaseClient.auth.getUser();
+
+    if (authError || !user) {
+      syncStatus('Connecte-toi avant d’envoyer ta cave.');
+      return;
+    }
+
+    const localWines = JSON.parse(localStorage.getItem(KEY) || '[]');
+
+    if (!localWines.length) {
+      syncStatus('Aucune bouteille à envoyer depuis cet appareil.');
+      return;
+    }
+
+    syncStatus('Envoi des bouteilles et des photos en cours…');
+
+    const { data: existingRows, error: existingError } =
+      await supabaseClient
+        .from('wines')
+        .select('id, bottle_photo_url, labbel_photo_url')
+        .eq('user_id', user.id);
+
+    if (existingError) {
+      syncStatus('Erreur de lecture du cloud : ' + existingError.message);
+      return;
+    }
+
+    const existingById = new Map(
+      (existingRows || []).map(row => [String(row.id), row])
+    );
+
+    const rows = [];
+
+    for (const w of localWines) {
+      const row = toCloudWine(w, user.id);
+      const existing = existingById.get(String(w.id));
+
+      const frontData = w.photo || w.bottlePhotoUrl || '';
+      const frontPath = await uploadWinePhoto(
+        frontData, user.id, w.id, 'face'
+      );
+
+      row.bottle_photo_url =
+        frontPath ||
+        w.bottlePhotoUrl ||
+        existing?.bottle_photo_url ||
+        null;
+
+      const backData = w.backPhoto || w.labbelPhotoUrl || '';
+      const backPath = await uploadWinePhoto(
+        backData, user.id, w.id, 'arriere'
+      );
+
+      row.labbel_photo_url =
+        backPath ||
+        w.labbelPhotoUrl ||
+        existing?.labbel_photo_url ||
+        null;
+
+      rows.push(row);
+    }
+
+    const { error } = await supabaseClient
+      .from('wines')
       .upsert(rows, { onConflict: 'id' });
 
     if (error) {
@@ -303,7 +373,7 @@ if (error) throw error;
     );
   } catch (err) {
     console.error(err);
-    syncStatus('Erreur pendant l’envoi des photos : ' + err.message);
+    syncStatus('Erreur pendant l’envoi : ' + err.message);
   }
 });
 
