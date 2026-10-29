@@ -167,9 +167,9 @@ const KEY='ma-cave-a-vin-v1';
 const SUPABASE_URL = 'https://txdlqhlyvsyrxjqfyind.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_kzUNvGF2HhsOTtMS9VUllw_KI1kdjyf';
  const supabaseClient = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-);
+onst supabaseClient = window.supabase?.createClient
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
  
 const syncStatus = (message) => {
   const el = document.getElementById('syncStatus');
