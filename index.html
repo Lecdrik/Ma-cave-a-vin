@@ -426,6 +426,36 @@ const regionPlaces={'Bordeaux':[44.84,-0.58],'Bourgogne':[47.02,4.84],'Champagne
 function renderRegions(){const counts={};wines.filter(w=>Number(w.quantity)>0).forEach(w=>{const r=inferRegion(w);counts[r]=(counts[r]||0)+Number(w.quantity||0)});const known=Object.keys(counts).filter(r=>r!=='Origine à préciser');$('regionList').innerHTML=known.map(r=>{const xy=regionPlaces[r];const q=encodeURIComponent(r+' vignoble France');const url=xy?`https://www.openstreetmap.org/?mlat=${xy[0]}&mlon=${xy[1]}#map=8/${xy[0]}/${xy[1]}`:`https://www.openstreetmap.org/search?query=${q}`;return `<span class="region-chip"><a href="${url}" target="_blank" rel="noopener">${esc(r)} · ${fmt(counts[r])} bouteille(s) ↗</a></span>`}).join('');$('regionEmpty').classList.toggle('hidden',known.length>0);if(counts['Origine à préciser'])$('regionList').insertAdjacentHTML('beforeend',`<span class="region-chip">Origine à préciser · ${fmt(counts['Origine à préciser'])} bouteille(s)</span>`)}
 let selectedVineyardRegion = '';
 let selectedVineyardCountry = '';
+ function regionForWine(w) {
+  const text = [
+    w.appellation || '',
+    w.name || '',
+    w.producer || ''
+  ].join(' ').toLowerCase()
+   .normalize('NFD')
+   .replace(/[\u0300-\u036f]/g, '');
+
+  const rules = [
+    ['Bordeaux', /\bbordeaux\b|saint[- ]emilion|pomerol|medoc|margaux|pauillac|graves|sauternes|pessac|lalande-de-pomerol/],
+    ['Bourgogne', /\bbourgogne\b|chablis|gevrey-chambertin|nuits-saint-georges|beaune|meursault|pommard|macon|pouilly-fuisse|chassagne-montrachet/],
+    ['Champagne', /\bchampagne\b/],
+    ['Alsace', /\balsace\b|riesling|gewurztraminer|gewurztraminer/],
+    ['Vallée de la Loire', /loire|sancerre|pouilly-fume|muscadet|chinon|bourgueil|vouvray|anjou|saumur|menetou-salon/],
+    ['Vallée du Rhône', /rhone|chateauneuf-du-pape|gigondas|vacqueyras|cote-rotie|hermitage|crozes-hermitage|condrieu|saint-joseph/],
+    ['Languedoc', /languedoc|minervois|corbieres|fitou|pic-saint-loup|faugeres|saint-chinian|limoux/],
+    ['Provence', /provence|bandol|cassis|coteaux-d.aix|cotes-de-provence|palette/],
+    ['Beaujolais', /beaujolais|morgon|fleurie|moulin-a-vent|brouilly|chiroubles|regnie/],
+    ['Jura', /\bjura\b|arbois|chateau-chalon|l.toile|cotes-du-jura/],
+    ['Savoie', /\bsavoie\b|seyssel|crepy|apremont|chignin/],
+    ['Sud-Ouest', /sud-ouest|cahors|madiran|bergerac|monbazillac|jurancon|gaillac|fronton|marcillac|irouleguy/]
+  ];
+
+  for (const [region, pattern] of rules) {
+    if (pattern.test(text)) return region;
+  }
+
+  return '';
+}
  function render(){
  const total=wines.reduce((a,w)=>a+Number(w.quantity||0),0);
  $('statBottles').textContent=fmt(total);
