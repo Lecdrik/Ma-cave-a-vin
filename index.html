@@ -801,12 +801,26 @@ function renderVineyardMap() {
     { name: 'Sud-Ouest', lat: 44.20, lon: 0.50 }
   ];
 
-  regions.forEach(region => {
-   L.marker([region.lat, region.lon])
-  .bindTooltip(region.name)
-  .bindPopup(region.name)
-  .addTo(vineyardMarkers);
-  });
+regions.forEach(region => {
+  const bottles = wines
+    .filter(w => regionForWine(w) === region.name)
+    .reduce((total, w) => total + Number(w.quantity || 0), 0);
+
+  const marker = L.marker([region.lat, region.lon]);
+
+  marker
+    .bindTooltip(`${region.name} : ${bottles} bouteille(s)`)
+    .bindPopup(`
+      <strong>${region.name}</strong><br>
+      ${bottles} bouteille(s)
+      <br><br>
+      <button type="button"
+        onclick="selectedVineyardRegion='${region.name}'; switchTab('inventory'); render();">
+        Voir ces bouteilles
+      </button>
+    `)
+    .addTo(vineyardMarkers);
+});
 }
 render();
 </script>
