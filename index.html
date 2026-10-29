@@ -748,6 +748,32 @@ function initVineyardMap() {
 
   setTimeout(() => vineyardMap.invalidateSize(), 150);
 }
+function renderVineyardMap() {
+  if (!vineyardMap || !vineyardMarkers) return;
+
+  vineyardMarkers.clearLayers();
+
+  const regions = [
+    { name: 'Bordeaux', lat: 44.84, lon: -0.58 },
+    { name: 'Bourgogne', lat: 47.05, lon: 4.86 },
+    { name: 'Champagne', lat: 49.05, lon: 4.05 },
+    { name: 'Alsace', lat: 48.32, lon: 7.45 },
+    { name: 'Vallée de la Loire', lat: 47.35, lon: 0.70 },
+    { name: 'Vallée du Rhône', lat: 44.95, lon: 4.85 },
+    { name: 'Languedoc', lat: 43.45, lon: 3.90 },
+    { name: 'Provence', lat: 43.50, lon: 6.00 },
+    { name: 'Beaujolais', lat: 46.15, lon: 4.65 },
+    { name: 'Jura', lat: 46.75, lon: 5.75 },
+    { name: 'Savoie', lat: 45.55, lon: 6.10 },
+    { name: 'Sud-Ouest', lat: 44.20, lon: 0.50 }
+  ];
+
+  regions.forEach(region => {
+    L.marker([region.lat, region.lon])
+      .bindPopup(region.name)
+      .addTo(vineyardMarkers);
+  });
+}
 render();
 </script>
 </body></html>
