@@ -34,6 +34,7 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
  <button data-tab="pineau">Ajouter du pineau</button>
  <button data-tab="pairing">Quel vin avec mon plat ?</button>
  <button data-tab="alerts">Alertes & sauvegarde</button>
+ <button data-tab="vineyardMap">Carte des vignobles</button>
 </div>
 <section id="inventory">
  <div class="value-stats">
@@ -45,6 +46,46 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
  <div id="wineList" class="wine-list"></div>
  <div class="panel" style="margin-top:14px"><h2>Repérer les bons rapports qualité-prix</h2><p class="hint">Recherche des avis, guides et offres selon le budget. Le prix seul ne garantit pas la qualité : compare l'appellation, le millésime, le producteur, les notes de dégustation et les frais de livraison.</p><div class="toolbar"><input id="budget" type="number" min="1" step="1" placeholder="Budget maximum par bouteille (€)"><select id="style"><option value="tous types">Tous styles</option><option>Rouge</option><option>Blanc</option><option>Rosé</option><option>Effervescent</option></select><button id="valueSearch">Rechercher des bons rapports qualité-prix</button></div></div>
 </section>
+
+<section id="vineyardMap" class="panel hidden">
+  <h2>🌍 Carte des vignobles</h2>
+  <p class="hint">
+    Explore les grandes régions viticoles du monde et retrouve
+    les bouteilles correspondantes dans ta cave.
+  </p>
+
+  <div class="field">
+    <label for="mapCountry">Pays producteur</label>
+    <select id="mapCountry">
+      <option value="all">Tous les pays</option>
+      <option value="France">France</option>
+      <option value="Italie">Italie</option>
+      <option value="Espagne">Espagne</option>
+      <option value="Portugal">Portugal</option>
+      <option value="Allemagne">Allemagne</option>
+      <option value="États-Unis">États-Unis</option>
+      <option value="Chili">Chili</option>
+      <option value="Argentine">Argentine</option>
+      <option value="Australie">Australie</option>
+      <option value="Afrique du Sud">Afrique du Sud</option>
+    </select>
+  </div>
+
+  <div id="vineyardMapCanvas"
+       style="height:420px;border-radius:12px;overflow:hidden;background:#f3e8d8">
+  </div>
+
+  <h3 style="margin-top:18px">Régions viticoles</h3>
+  <div id="vineyardRegions" class="region-list"></div>
+
+  <h3 style="margin-top:18px">Bouteilles correspondantes</h3>
+  <div id="vineyardWines" class="wine-list">
+    <p class="hint">
+      Sélectionne un pays ou une région pour commencer.
+    </p>
+  </div>
+</section>
+
 <section id="add" class="panel hidden">
  <h2 id="formTitle">Ajouter une bouteille ou un lot</h2>
  <form id="wineForm">
