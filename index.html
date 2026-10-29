@@ -263,118 +263,42 @@ function fromCloudWine(w) {
     // Compatibilité avec l'ancien affichage de la photo de face.
     photo: w.bottle_photo_url || w.photo_url || ''
   };
- }
-async function uploadWinePhoto(fileData, userId, wineId, photoType) {
-  if (!fileData || !fileData.startsWith('data:')) {
-    return fileData || null;
-  }
-
-  const response = await fetch(fileData);
-  const blob = await response.blob();
-
-  const extension = blob.type === 'image/png' ? 'png'
-    : blob.type === 'image/webp' ? 'webp'
-    : 'jpg';
-
-  const path = `${userId}/${wineId}/${photoType}.${extension}`;
-
-  const { error } = await supabaseClient.storage
-    .from('wine-photos')
-    .upload(path, blob, {
-      upsert: true,
-      contentType: blob.type || 'image/jpeg'
-    });
-if (error) throw error;
-
-  // Le stockage reste privé : on retourne le chemin du fichier.
-  return path;
 }
-
-
 document.getElementById('syncUpload').addEventListener('click', async () => {
-  try {
-    const {
-      data: { user },
-      error: authError
-    } = await supabaseClient.auth.getUser();
+  const { data: { user }, error: authError } =
+    await supabaseClient.auth.getUser();
 
-    if (authError || !user) {
-      syncStatus('Connecte-toi avant d’envoyer ta cave.');
-      return;
-    }
-
-    const localWines = JSON.parse(localStorage.getItem(KEY) || '[]');
-
-    if (!localWines.length) {
-      syncStatus('Aucune bouteille à envoyer depuis cet appareil.');
-      return;
-    }
-
-    syncStatus('Envoi des bouteilles et des photos en cours…');
-
-    const { data: existingRows, error: existingError } =
-      await supabaseClient
-        .from('wines')
-        .select('id, bottle_photo_url, labbel_photo_url')
-        .eq('user_id', user.id);
-
-    if (existingError) {
-      syncStatus('Erreur de lecture du cloud : ' + existingError.message);
-      return;
-    }
-
-    const existingById = new Map(
-      (existingRows || []).map(row => [String(row.id), row])
-    );
-
-    const rows = [];
-
-    for (const w of localWines) {
-      const row = toCloudWine(w, user.id);
-      const existing = existingById.get(String(w.id));
-
-      const frontData = w.photo || w.bottlePhotoUrl || '';
-      const frontPath = await uploadWinePhoto(
-        frontData, user.id, w.id, 'face'
-      );
-
-      row.bottle_photo_url =
-        frontPath ||
-        w.bottlePhotoUrl ||
-        existing?.bottle_photo_url ||
-        null;
-
-      const backData = w.backPhoto || w.labbelPhotoUrl || '';
-      const backPath = await uploadWinePhoto(
-        backData, user.id, w.id, 'arriere'
-      );
-
-      row.labbel_photo_url =
-        backPath ||
-        w.labbelPhotoUrl ||
-        existing?.labbel_photo_url ||
-        null;
-
-      rows.push(row);
-    }
-
-    const { error } = await supabaseClient
-      .from('wines')
-      .upsert(rows, { onConflict: 'id' });
-
-    if (error) {
-      syncStatus('Erreur lors de l’envoi : ' + error.message);
-      return;
-    }
-
-    syncStatus(
-      localWines.length +
-      ' fiche(s) envoyée(s) vers le cloud avec leurs photos disponibles.'
-    );
-  } catch (err) {
-    console.error(err);
-    syncStatus('Erreur pendant l’envoi : ' + err.message);
+  if (authError || !user) {
+    syncStatus('Connecte-toi avant d’envoyer ta cave.');
+    return;
   }
+
+  if (!confirm(
+    'Envoyer les bouteilles de cet appareil vers le cloud ? ' +
+    'Les bouteilles existantes dans le cloud seront mises à jour si leur identifiant correspond.'
+  )) return;
+
+  const localWines = JSON.parse(localStorage.getItem(KEY) || '[]');
+
+  if (!localWines.length) {
+    syncStatus('Aucune bouteille à envoyer depuis cet appareil.');
+    return;
+  }
+
+  syncStatus('Envoi de la cave en cours…');
+
+  const rows = localWines.map(w => toCloudWine(w, user.id));
+
+  const { error } = await supabaseClient
+    .from('wines')
+    .upsert(rows, { onConflict: 'id' });
+
+  if (error) {
+    syncStatus('Erreur lors de l’envoi : ' + error.message);
+    return;
+  }
+
+  syncStatus(localWines.length + ' fiche(s) envoyée(s) vers le cloud.');
 });
 
 document.getElementById('syncDownload').addEventListener('click', async () => {
@@ -409,21 +333,11 @@ document.getElementById('syncDownload').addEventListener('click', async () => {
     const cloudWine = fromCloudWine(row);
     const localWine = merged.get(cloudWine.id);
 
-  merged.set(
-  cloudWine.id,
-  localWine
-    ? {
-        ...cloudWine,
-        ...localWine,
-        photo: localWine.photo || cloudWine.photo || '',
-        backPhoto: localWine.backPhoto || cloudWine.backPhoto || '',
-        bottlePhotoUrl:
-          cloudWine.bottlePhotoUrl || localWine.bottlePhotoUrl || '',
-        labbelPhotoUrl:
-          cloudWine.labbelPhotoUrl || localWine.labbelPhotoUrl || ''
-      }
-    : cloudWine
-);
+    merged.set(
+      cloudWine.id,
+      localWine ? { ...cloudWine, ...localWine } : cloudWine
+    );
+  });
 
   wines = Array.from(merged.values());
   localStorage.setItem(KEY, JSON.stringify(wines));
@@ -462,28 +376,7 @@ function inferRegion(w){const a=String(w.appellation||'').toLocaleLowerCase('fr'
  ];return (rules.find(([r,keys])=>keys.some(k=>t.includes(k)))||[])[0]||'Origine à préciser'}
 const regionPlaces={'Bordeaux':[44.84,-0.58],'Bourgogne':[47.02,4.84],'Champagne':[49.04,3.96],'Vallée du Rhône':[44.05,4.83],'Val de Loire':[47.26,-0.08],'Alsace':[48.25,7.44],'Provence':[43.52,5.45],'Languedoc-Roussillon':[43.60,3.88],'Sud-Ouest':[44.45,0.15],'Jura et Savoie':[46.75,5.75],'Charentes (Pineau)':[45.70,-0.33]};
 function renderRegions(){const counts={};wines.filter(w=>Number(w.quantity)>0).forEach(w=>{const r=inferRegion(w);counts[r]=(counts[r]||0)+Number(w.quantity||0)});const known=Object.keys(counts).filter(r=>r!=='Origine à préciser');$('regionList').innerHTML=known.map(r=>{const xy=regionPlaces[r];const q=encodeURIComponent(r+' vignoble France');const url=xy?`https://www.openstreetmap.org/?mlat=${xy[0]}&mlon=${xy[1]}#map=8/${xy[0]}/${xy[1]}`:`https://www.openstreetmap.org/search?query=${q}`;return `<span class="region-chip"><a href="${url}" target="_blank" rel="noopener">${esc(r)} · ${fmt(counts[r])} bouteille(s) ↗</a></span>`}).join('');$('regionEmpty').classList.toggle('hidden',known.length>0);if(counts['Origine à préciser'])$('regionList').insertAdjacentHTML('beforeend',`<span class="region-chip">Origine à préciser · ${fmt(counts['Origine à préciser'])} bouteille(s)</span>`)}
-async function getWinePhotoUrl(path) {
-  if (!path) return '';
-
-  // Une photo locale déjà disponible sous forme d'image.
-  if (path.startsWith('data:') || path.startsWith('blob:') ||
-      path.startsWith('http://') || path.startsWith('https://')) {
-    return path;
-  }
-
-  // Une photo stockée dans le bucket privé Supabase.
-  const { data, error } = await supabaseClient.storage
-    .from('wine-photos')
-    .createSignedUrl(path, 3600);
-
-  if (error) {
-    console.error('Impossible de charger la photo :', error.message);
-    return '';
-  }
-
-  return data.signedUrl;
-}
- function render(){
+function render(){
  const total=wines.reduce((a,w)=>a+Number(w.quantity||0),0);
  $('statBottles').textContent=fmt(total);
  $('statReady').textContent=fmt(wines.filter(w=>['ready','late'].includes(status(w).key)).reduce((a,w)=>a+Number(w.quantity||0),0));
@@ -501,9 +394,8 @@ async function getWinePhotoUrl(path) {
  }).sort((a,b)=>(Number(a.drinkUntil)||9999)-(Number(b.drinkUntil)||9999));
  $('wineList').innerHTML=arr.length?arr.map(w=>{
   const s=status(w), period=(w.drinkFrom||w.drinkUntil)?`${w.drinkFrom||'—'} – ${w.drinkUntil||'—'}`:'Non renseignée';
-return `<article class="wine"><div class="wine-main"><div class="wine-head">${(w.bottlePhotoUrl || w.photo) ? `<img data-photo-path="${esc(w.bottlePhotoUrl || w.photo)}" alt="Étiquette de ${esc(w.name)}" style="width:90px;height:120px;object-fit:contain;border-radius:8px">` : bottleIllustration(w.color,w.kind)}<div><h3>${esc(w.name)}</h3><p>${esc([w.producer,w.appellation,w.vintage,w.color].filter(Boolean).join(' · '))}</p></div></div>${w.kind==='pineau'?'<span class="pill">Pineau · bouteille de 75 cl</span>':''}<span class="pill ${s.cls}">${esc(s.label)}</span><span class="pill">${fmt(w.quantity)} bouteille(s)</span>${w.kind==='pineau'?'<p>Cuvée '+esc(w.vintage||'année non renseignée')+' · Format 75 cl</p>':`<p>Période : ${esc(period)} · Emplacement : ${esc(w.location||'non renseigné')}</p>`}${w.purchase?`<p>Prix payé : ${esc(w.purchase)} €`+(w.marketPrice?` · Prix en ligne : ${esc(w.marketPrice)} €`:'')+`</p>`:''}${w.priceUrl?`<p><a href="${esc(w.priceUrl)}" target="_blank" rel="noopener">Voir l'offre${w.priceChecked?' (vérifiée le '+esc(w.priceChecked)+')':''}</a></p>`:''}${w.notes?`<p>${esc(w.notes)}</p>`:''}${w.photo?`<p><a href="${w.photo}" target="_blank" rel="noopener">Voir l'étiquette</a></p>`:''}</div><div class="actions">${w.kind==='pineau'?'':'<button class="secondary" onclick="editWine(\''+w.id+'\')">Modifier</button>'}<button onclick="drinkWine('${w.id}')">Boire 1</button><button class="danger" onclick="deleteWine('${w.id}')">Supprimer</button></div></article>`;
+  return `<article class="wine"><div class="wine-main"><div class="wine-head">${bottleIllustration(w.color,w.kind)}<div><h3>${esc(w.name)}</h3><p>${esc([w.producer,w.appellation,w.vintage,w.color].filter(Boolean).join(' · '))}</p></div></div>${w.kind==='pineau'?'<span class="pill">Pineau · bouteille de 75 cl</span>':''}<span class="pill ${s.cls}">${esc(s.label)}</span><span class="pill">${fmt(w.quantity)} bouteille(s)</span>${w.kind==='pineau'?'<p>Cuvée '+esc(w.vintage||'année non renseignée')+' · Format 75 cl</p>':`<p>Période : ${esc(period)} · Emplacement : ${esc(w.location||'non renseigné')}</p>`}${w.purchase?`<p>Prix payé : ${esc(w.purchase)} €`+(w.marketPrice?` · Prix en ligne : ${esc(w.marketPrice)} €`:'')+`</p>`:''}${w.priceUrl?`<p><a href="${esc(w.priceUrl)}" target="_blank" rel="noopener">Voir l'offre${w.priceChecked?' (vérifiée le '+esc(w.priceChecked)+')':''}</a></p>`:''}${w.notes?`<p>${esc(w.notes)}</p>`:''}${w.photo?`<p><a href="${w.photo}" target="_blank" rel="noopener">Voir l'étiquette</a></p>`:''}</div><div class="actions">${w.kind==='pineau'?'':'<button class="secondary" onclick="editWine(\''+w.id+'\')">Modifier</button>'}<button onclick="drinkWine('${w.id}')">Boire 1</button><button class="danger" onclick="deleteWine('${w.id}')">Supprimer</button></div></article>`;
  }).join(''):'<div class="empty">Aucun vin ne correspond. Ajoute ton premier vin dans l’onglet « Ajouter un vin ».</div>';
-  loadWinePhotos();
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function clearForm(){ $('wineForm').reset();$('wineId').value='';$('quantity').value=1;$('formTitle').textContent='Ajouter une bouteille ou un lot';photoData='';backPhotoData='';
@@ -527,26 +419,7 @@ $('labelPhoto').addEventListener('change', e => {
   };
   r.readAsDataURL(f);
 });
-async function loadWinePhotos() {
-  const images = document.querySelectorAll('img[data-photo-path]');
 
-  for (const img of images) {
-    const path = img.dataset.photoPath;
-
-    try {
-      const url = await getWinePhotoUrl(path);
-
-      if (url) {
-        img.src = url;
-      } else {
-        img.style.display = 'none';
-      }
-    } catch (err) {
-      console.error('Erreur de chargement de la photo :', err);
-      img.style.display = 'none';
-    }
-  }
-}
 $('backLabelPhoto').addEventListener('change', e => {
   const f = e.target.files[0];
   if (!f) return;
@@ -672,7 +545,63 @@ $('readLabel').addEventListener('click', async () => {
   }
 });
 
-   
+    const result = await worker.recognize(file);
+    const text = result.data.text || '';
+    const lines = text
+      .split(/\r?\n/)
+      .map(s => s.replace(/\s+/g, ' ').trim())
+      .filter(s => s.length >= 3);
+
+    if (!lines.length) {
+      $('ocrStatus').textContent =
+        'Aucun texte lisible. Essaie une photo plus nette, sans reflet.';
+      return;
+    }
+
+    // Cherche un millésime plausible sans remplir le champ s'il est déjà renseigné.
+    const years = [...text.matchAll(/\b(?:19\d{2}|20[0-2]\d)\b/g)]
+      .map(m => Number(m[0]))
+      .filter(y => y >= 1900 && y <= new Date().getFullYear());
+
+    if (!$('vintage').value && years.length) {
+      $('vintage').value = years[0];
+    }
+
+    // Écarte les mentions courantes qui ne sont généralement pas un nom de vin.
+    const excluded = /^(vin|wine|appellation|appellation d'origine contrôlée|aoc|aop|indication géographique protégée|mis en bouteille|mis en bouteille au domaine|produit de france|produit en france|contient des sulfites|75 cl|750 ml|france|rouge|blanc|rosé|bio|organic)$/i;
+
+    const candidates = lines.filter(line =>
+      !excluded.test(line) &&
+      !/\b(?:19|20)\d{2}\b/.test(line) &&
+      !/^\d+[,.]?\d*\s*(cl|ml|%)/i.test(line) &&
+      !/^(alc(?:ool)?\.?|vol\.?|% vol)/i.test(line) &&
+      !/^(eau|ingrédients|nutrition|consommer avec modération)/i.test(line)
+    );
+
+    // Préremplit uniquement les champs vides. Les suggestions restent à vérifier.
+    if (!$('name').value.trim() && candidates.length) {
+      $('name').value = candidates[0].slice(0, 100);
+    }
+
+    if (!$('producer').value.trim() && candidates.length > 1) {
+      $('producer').value = candidates[1].slice(0, 100);
+    }
+
+    $('ocrStatus').textContent =
+      'Lecture terminée. Vérifie les champs proposés : le nom et le domaine peuvent être inversés. Texte reconnu : ' +
+      text.replace(/\s+/g, ' ').trim().slice(0, 600);
+
+  } catch (err) {
+    console.error(err);
+    $('ocrStatus').textContent =
+      'Échec de la lecture. Réessaie avec une photo nette et une connexion Internet.';
+  } finally {
+    if (worker) {
+      try { await worker.terminate(); } catch (e) {}
+    }
+    btn.disabled = false;
+  }
+});
 $('wineForm').addEventListener('submit', e => {
   e.preventDefault();
 
