@@ -112,6 +112,8 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
   <div class="field">
   <label for="labelPhoto">Photo de face — illustration de la bouteille</label>
   <input id="labelPhoto" type="file" accept="image/*" capture="environment">
+   <button type="button" id="analyzeLabel">Analyser l’étiquette</button>
+<div id="ocrStatus" aria-live="polite"></div>
   <div class="hint">Photographie la face avant de la bouteille. Cette photo servira d’illustration dans ta cave.</div>
   <div id="photoPreview"></div>
 </div>
