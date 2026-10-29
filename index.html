@@ -770,9 +770,10 @@ function renderVineyardMap() {
   ];
 
   regions.forEach(region => {
-    L.marker([region.lat, region.lon])
-      .bindPopup(region.name)
-      .addTo(vineyardMarkers);
+   L.marker([region.lat, region.lon])
+  .bindTooltip(region.name)
+  .bindPopup(region.name)
+  .addTo(vineyardMarkers);
   });
 }
 render();
