@@ -544,64 +544,6 @@ $('readLabel').addEventListener('click', async () => {
     btn.disabled = false;
   }
 });
-
-    const result = await worker.recognize(file);
-    const text = result.data.text || '';
-    const lines = text
-      .split(/\r?\n/)
-      .map(s => s.replace(/\s+/g, ' ').trim())
-      .filter(s => s.length >= 3);
-
-    if (!lines.length) {
-      $('ocrStatus').textContent =
-        'Aucun texte lisible. Essaie une photo plus nette, sans reflet.';
-      return;
-    }
-
-    // Cherche un millésime plausible sans remplir le champ s'il est déjà renseigné.
-    const years = [...text.matchAll(/\b(?:19\d{2}|20[0-2]\d)\b/g)]
-      .map(m => Number(m[0]))
-      .filter(y => y >= 1900 && y <= new Date().getFullYear());
-
-    if (!$('vintage').value && years.length) {
-      $('vintage').value = years[0];
-    }
-
-    // Écarte les mentions courantes qui ne sont généralement pas un nom de vin.
-    const excluded = /^(vin|wine|appellation|appellation d'origine contrôlée|aoc|aop|indication géographique protégée|mis en bouteille|mis en bouteille au domaine|produit de france|produit en france|contient des sulfites|75 cl|750 ml|france|rouge|blanc|rosé|bio|organic)$/i;
-
-    const candidates = lines.filter(line =>
-      !excluded.test(line) &&
-      !/\b(?:19|20)\d{2}\b/.test(line) &&
-      !/^\d+[,.]?\d*\s*(cl|ml|%)/i.test(line) &&
-      !/^(alc(?:ool)?\.?|vol\.?|% vol)/i.test(line) &&
-      !/^(eau|ingrédients|nutrition|consommer avec modération)/i.test(line)
-    );
-
-    // Préremplit uniquement les champs vides. Les suggestions restent à vérifier.
-    if (!$('name').value.trim() && candidates.length) {
-      $('name').value = candidates[0].slice(0, 100);
-    }
-
-    if (!$('producer').value.trim() && candidates.length > 1) {
-      $('producer').value = candidates[1].slice(0, 100);
-    }
-
-    $('ocrStatus').textContent =
-      'Lecture terminée. Vérifie les champs proposés : le nom et le domaine peuvent être inversés. Texte reconnu : ' +
-      text.replace(/\s+/g, ' ').trim().slice(0, 600);
-
-  } catch (err) {
-    console.error(err);
-    $('ocrStatus').textContent =
-      'Échec de la lecture. Réessaie avec une photo nette et une connexion Internet.';
-  } finally {
-    if (worker) {
-      try { await worker.terminate(); } catch (e) {}
-    }
-    btn.disabled = false;
-  }
-});
 $('wineForm').addEventListener('submit', e => {
   e.preventDefault();
 
