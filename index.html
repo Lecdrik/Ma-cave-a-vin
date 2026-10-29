@@ -454,9 +454,10 @@ function switchTab(tab){
   $(tab).classList.remove('hidden');
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
 
-  if(tab==='vineyardMap'){
-    initVineyardMap();
-  }
+ if(tab==='vineyardMap'){
+  initVineyardMap();
+  renderVineyardMap();
+}
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 $('labelPhoto').addEventListener('change', e => {
