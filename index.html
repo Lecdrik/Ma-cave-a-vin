@@ -18,6 +18,7 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
 @media(max-width:650px){main{padding:12px}.stats{grid-template-columns:repeat(3,1fr);gap:6px}.stat{padding:10px}.stat strong{font-size:1.2rem}.grid{grid-template-columns:1fr}.wine{grid-template-columns:1fr}.wine .actions{justify-content:start}}
 .value-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 18px}.wine-illustration{width:54px;height:100px;float:left;margin:0 12px 6px 0;flex-shrink:0}.wine-main{min-width:0}.wine-head{display:flex;align-items:flex-start;gap:10px}.wine-head .wine-illustration{float:none;margin:0;width:42px;height:78px}.map-panel{margin-top:14px}.region-list{display:flex;gap:8px;flex-wrap:wrap}.region-chip{display:inline-block;background:#f3e8d8;border-radius:99px;padding:6px 10px;font-size:.86rem}.region-chip a{color:#6a4b1a;text-decoration:none}.map-note{font-size:.86rem;color:var(--muted)}@media(max-width:650px){.value-stats{grid-template-columns:1fr 1fr}}
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
 <header><h1>🍷 Ma Cave à Vin</h1><p>Ton inventaire, les fenêtres de dégustation et les rappels.</p></header>
@@ -203,6 +204,7 @@ h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:0 0 8px}.grid{disp
 </main>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const KEY='ma-cave-a-vin-v1';
 const SUPABASE_URL = 'https://txdlqhlyvsyrxjqfyind.supabase.co';
@@ -447,7 +449,15 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function clearForm(){ $('wineForm').reset();$('wineId').value='';$('quantity').value=1;$('formTitle').textContent='Ajouter une bouteille ou un lot';photoData='';backPhotoData='';
 $('backLabelPhoto').value='';
 $('backPhotoPreview').innerHTML='';$('photoPreview').innerHTML='';}
-function switchTab(tab){document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));$(tab).classList.remove('hidden');document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));}
+function switchTab(tab){
+  document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
+  $(tab).classList.remove('hidden');
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+
+  if(tab==='vineyardMap'){
+    initVineyardMap();
+  }
+}
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 $('labelPhoto').addEventListener('change', e => {
   const f = e.target.files[0];
@@ -717,6 +727,27 @@ $('findPrice').onclick=()=>{const n=$('name').value.trim(),p=$('producer').value
 $('findWine').onclick=()=>{const n=$('name').value.trim(),p=$('producer').value.trim(),a=$('appellation').value.trim(),v=$('vintage').value;const q=[n,p,a,v,'avis prix meilleur rapport qualité prix'].filter(Boolean).join(' ');if(!n&&!p&&!a){alert('Saisis au moins le nom du vin, du domaine ou de l’appellation.');return}openSearch(q)};
 $('valueSearch').onclick=()=>{const b=$('budget').value,st=$('style').value;if(!b||Number(b)<=0){alert('Indique ton budget maximum par bouteille.');return}openSearch('meilleurs vins rapport qualité prix '+st+' moins de '+b+' euros France 2026 guide des vins')};
 if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+ // Carte interactive des pays et régions viticoles
+let vineyardMap = null;
+let vineyardMarkers = null;
+
+function initVineyardMap() {
+  const container = document.getElementById('vineyardMapCanvas');
+  if (!container || !window.L) return;
+
+  if (!vineyardMap) {
+    vineyardMap = L.map(container).setView([46.5, 2.5], 5);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 18
+    }).addTo(vineyardMap);
+
+    vineyardMarkers = L.layerGroup().addTo(vineyardMap);
+  }
+
+  setTimeout(() => vineyardMap.invalidateSize(), 150);
+}
 render();
 </script>
 </body></html>
