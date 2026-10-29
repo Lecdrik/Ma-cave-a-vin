@@ -510,23 +510,6 @@ $('labelPhoto').addEventListener('change', e => {
   };
   r.readAsDataURL(f);
 });
- if (!$('appellation').value.trim()) {
-      const appellationLine = lines.find(line =>
-        /\b(appellation|aoc|aop|bordeaux|bourgogne|champagne|saint[- ]emilion|cotes? du rhone|alsace|loire)\b/i.test(line)
-      );
-      if (appellationLine) $('appellation').value = appellationLine;
-    }
-
-    $('ocrStatus').textContent =
-      'Analyse terminée. Vérifie les champs avant d’enregistrer la bouteille.';
-  } catch (error) {
-    console.error('Erreur OCR :', error);
-    $('ocrStatus').textContent =
-      'Échec de l’analyse. Réessaie avec une photo plus nette.';
-  } finally {
-    button.disabled = false;
-  }
-});
  
 $('backLabelPhoto').addEventListener('change', e => {
   const f = e.target.files[0];
