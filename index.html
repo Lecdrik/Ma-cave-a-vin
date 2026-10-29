@@ -470,7 +470,7 @@ let selectedVineyardCountry = '';
  const arr=wines.filter(w=>{
   const hay=[w.name,w.producer,w.appellation,w.vintage,w.location,w.color].join(' ').toLowerCase();
   const s=status(w).key;
-  return (!q||hay.includes(q))&&(f==='all'||(f==='ready'&&s==='ready')||(f==='keep'&&s==='keep')||(f==='late'&&s==='late'));
+return (!q||hay.includes(q))&&(f==='all'||(f==='ready'&&s==='ready')||(f==='keep'&&s==='keep')||(f==='late'&&s==='late'))&&(!selectedVineyardRegion||regionForWine(w)===selectedVineyardRegion);
  }).sort((a,b)=>(Number(a.drinkUntil)||9999)-(Number(b.drinkUntil)||9999));
  $('wineList').innerHTML=arr.length?arr.map(w=>{
   const s=status(w), period=(w.drinkFrom||w.drinkUntil)?`${w.drinkFrom||'—'} – ${w.drinkUntil||'—'}`:'Non renseignée';
