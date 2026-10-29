@@ -169,11 +169,17 @@ const SUPABASE_ANON_KEY = 'sb_publishable_kzUNvGF2HhsOTtMS9VUllw_KI1kdjyf';
 const supabaseClient = window.supabase?.createClient
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
- 
+
 const syncStatus = (message) => {
   const el = document.getElementById('syncStatus');
   if (el) el.textContent = message;
 };
+
+if (!supabaseClient) {
+  syncStatus(
+    'Supabase ne se charge pas. Vérifie ta connexion Internet puis recharge la page.'
+  );
+}
 
 document.getElementById('syncLogin').addEventListener('click', async () => {
   const email = document.getElementById('syncEmail').value.trim();
