@@ -424,7 +424,9 @@ function inferRegion(w){const a=String(w.appellation||'').toLocaleLowerCase('fr'
  ];return (rules.find(([r,keys])=>keys.some(k=>t.includes(k)))||[])[0]||'Origine à préciser'}
 const regionPlaces={'Bordeaux':[44.84,-0.58],'Bourgogne':[47.02,4.84],'Champagne':[49.04,3.96],'Vallée du Rhône':[44.05,4.83],'Val de Loire':[47.26,-0.08],'Alsace':[48.25,7.44],'Provence':[43.52,5.45],'Languedoc-Roussillon':[43.60,3.88],'Sud-Ouest':[44.45,0.15],'Jura et Savoie':[46.75,5.75],'Charentes (Pineau)':[45.70,-0.33]};
 function renderRegions(){const counts={};wines.filter(w=>Number(w.quantity)>0).forEach(w=>{const r=inferRegion(w);counts[r]=(counts[r]||0)+Number(w.quantity||0)});const known=Object.keys(counts).filter(r=>r!=='Origine à préciser');$('regionList').innerHTML=known.map(r=>{const xy=regionPlaces[r];const q=encodeURIComponent(r+' vignoble France');const url=xy?`https://www.openstreetmap.org/?mlat=${xy[0]}&mlon=${xy[1]}#map=8/${xy[0]}/${xy[1]}`:`https://www.openstreetmap.org/search?query=${q}`;return `<span class="region-chip"><a href="${url}" target="_blank" rel="noopener">${esc(r)} · ${fmt(counts[r])} bouteille(s) ↗</a></span>`}).join('');$('regionEmpty').classList.toggle('hidden',known.length>0);if(counts['Origine à préciser'])$('regionList').insertAdjacentHTML('beforeend',`<span class="region-chip">Origine à préciser · ${fmt(counts['Origine à préciser'])} bouteille(s)</span>`)}
-function render(){
+let selectedVineyardRegion = '';
+let selectedVineyardCountry = '';
+ function render(){
  const total=wines.reduce((a,w)=>a+Number(w.quantity||0),0);
  $('statBottles').textContent=fmt(total);
  $('statReady').textContent=fmt(wines.filter(w=>['ready','late'].includes(status(w).key)).reduce((a,w)=>a+Number(w.quantity||0),0));
