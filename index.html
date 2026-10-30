@@ -646,18 +646,11 @@ const frontCandidates = cleanLines(frontLines);
       $('appellation').value = foundAppellation[0];
     }
 
-    // Nom : privilégier une ligne lisible de la face avant.
-   if (!$('name').value.trim()) {
-      const badName = /\b(france|rouge|blanc|rose|vin|wine|75 cl|750 ml|mis en bouteille|appellation|contient des sulfites|les 4 hectares|hectares du vignoble|proprietaire|producteur|recolte|agriculture)\b/i;
-
-      const candidate = frontGood.find(line =>
-        !badName.test(normalizeOCR(line)) &&
-        /[a-zA-ZÀ-ÿ]{4,}/.test(line) &&
-        line.split(/\s+/).length >= 1
-      );
-
-      if (candidate) $('name').value = candidate.slice(0, 100);
-    }
+  // Nom : privilégier le nom du château ou du domaine sur la face avant.
+    if (!$('name').value.trim()) {
+      const frontNormalized = frontGood.map(line => ({
+        line,
+    
 
     // Producteur : rechercher les mentions explicites au dos.
     if (!$('producer').value.trim()) {
