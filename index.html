@@ -590,10 +590,24 @@ $('readLabel').addEventListener('click', async () => {
       !/^(alc(?:ool)?\.?|vol\.?|% vol)/i.test(line)
     );
 
-    const frontCandidates = cleanLines(frontLines);
+const frontCandidates = cleanLines(frontLines);
     const backCandidates = cleanLines(backLines);
     const allCandidates = cleanLines(getLines(allText));
 
+    const normalizeOCR = s => s.normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+    const validCandidate = line =>
+      /[a-zA-ZÀ-ÿ]{3}/.test(line) &&
+      !/^[^a-zA-ZÀ-ÿ]*$/.test(line) &&
+      line.length >= 4 &&
+      line.length <= 90;
+
+    const frontGood = frontCandidates.filter(validCandidate);
+    const backGood = backCandidates.filter(validCandidate);
+
+    // Millésime : privilégier les années plausibles.
     const years = [...allText.matchAll(/\b(?:19\d{2}|20[0-2]\d)\b/g)]
       .map(m => Number(m[0]))
       .filter(y => y >= 1900 && y <= new Date().getFullYear());
@@ -602,20 +616,55 @@ $('readLabel').addEventListener('click', async () => {
       $('vintage').value = years[0];
     }
 
+    // Appellations et régions fréquentes.
+    const appellations = [
+      ['Pécharmant', /\bpecharmant\b/],
+      ['Bergerac', /\bbergerac\b/],
+      ['Bordeaux', /\bbordeaux\b/],
+      ['Saint-Émilion', /\bsaint[- ]emilion\b/],
+      ['Pomerol', /\bpomerol\b/],
+      ['Bourgogne', /\bbourgogne\b|\bchablis\b/],
+      ['Champagne', /\bchampagne\b/],
+      ['Alsace', /\balsace\b/],
+      ['Côtes-du-Rhône', /\bcotes? du rhone\b/],
+      ['Châteauneuf-du-Pape', /\bchateauneuf[- ]du[- ]pape\b/],
+      ['Sancerre', /\bsancerre\b/],
+      ['Muscadet', /\bmuscadet\b/],
+      ['Cahors', /\bcahors\b/],
+      ['Madiran', /\bmadiran\b/],
+      ['Provence', /\bprovence\b/],
+      ['Beaujolais', /\bbeaujolais\b/],
+      ['Languedoc', /\blanguedoc\b/]
+    ];
+
+    const normalizedText = normalizeOCR(allText);
+    const foundAppellation = appellations.find(
+      ([name, pattern]) => pattern.test(normalizedText)
+    );
+
+    if (foundAppellation && !$('appellation').value.trim()) {
+      $('appellation').value = foundAppellation[0];
+    }
+
+    // Nom : privilégier une ligne lisible de la face avant.
     if (!$('name').value.trim()) {
-      const candidate = frontCandidates[0] || allCandidates[0];
+      const candidate = frontGood.find(line =>
+        !/\b(france|rouge|blanc|rose|vin|wine|75 cl|750 ml)\b/i.test(line)
+      );
       if (candidate) $('name').value = candidate.slice(0, 100);
     }
 
+    // Producteur : rechercher les mentions explicites au dos.
     if (!$('producer').value.trim()) {
-      const candidate =
-        backCandidates.find(line =>
-          /domaine|château|clos|maison|vignoble|propriétaire|producteur|mis en bouteille/i.test(line)
-        ) ||
-        backCandidates[0] ||
-        frontCandidates[1];
+      const producerLine = backGood.find(line =>
+        /\b(domaine|chateau|clos|maison|vignoble|proprietaire|producteur|mis en bouteille par)\b/i.test(
+          normalizeOCR(line)
+        )
+      );
 
-      if (candidate) $('producer').value = candidate.slice(0, 100);
+      if (producerLine) {
+        $('producer').value = producerLine.slice(0, 100);
+      }
     }
 
     $('ocrStatus').textContent =
