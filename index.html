@@ -647,10 +647,15 @@ const frontCandidates = cleanLines(frontLines);
     }
 
     // Nom : privilégier une ligne lisible de la face avant.
-    if (!$('name').value.trim()) {
+   if (!$('name').value.trim()) {
+      const badName = /\b(france|rouge|blanc|rose|vin|wine|75 cl|750 ml|mis en bouteille|appellation|contient des sulfites|les 4 hectares|hectares du vignoble|proprietaire|producteur|recolte|agriculture)\b/i;
+
       const candidate = frontGood.find(line =>
-        !/\b(france|rouge|blanc|rose|vin|wine|75 cl|750 ml)\b/i.test(line)
+        !badName.test(normalizeOCR(line)) &&
+        /[a-zA-ZÀ-ÿ]{4,}/.test(line) &&
+        line.split(/\s+/).length >= 1
       );
+
       if (candidate) $('name').value = candidate.slice(0, 100);
     }
 
