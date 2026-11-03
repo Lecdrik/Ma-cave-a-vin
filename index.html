@@ -878,12 +878,52 @@ main {
     padding: 10px 13px;
   }
 }
+
+/* === BANDEAU DE BIENVENUE === */
+
+.welcome-label {
+  display: inline-block;
+  margin-bottom: 13px;
+  padding: 6px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  color: #E5EEDF;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+}
+
+header .welcome-note {
+  display: inline-block;
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  color: #E5EEDF;
+  font-size: 0.86rem;
+  font-style: italic;
+}
+
+@media (max-width: 650px) {
+  .welcome-label {
+    margin-bottom: 11px;
+    font-size: 0.68rem;
+  }
+
+  header .welcome-note {
+    margin-top: 12px;
+  }
+}
   
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
-<header><h1>🍷 Ma Cave à Vin</h1><p>Ton inventaire, les fenêtres de dégustation et les rappels.</p></header>
+<header>
+  <div class="welcome-label">MON ESPACE VIN</div>
+  <h1>🍷 Ma Cave à Vin</h1>
+  <p>Retrouve tes bouteilles préférées, suis leur évolution et savoure chaque vin au bon moment.</p>
+  <div class="welcome-note">Une cave à ton image, simplement.</div>
+</header>
 <main>
 <div class="stats">
  <div class="stat"><strong id="statBottles">0</strong><span>bouteilles en cave</span></div>
