@@ -567,7 +567,123 @@ textarea:focus-visible {
     animation-duration: 0.01ms !important;
   }
 }
-  
+
+  /* === ACCUEIL : PRESENTATION PLUS MODERNE === */
+
+/* Zone principale */
+main {
+  padding-top: 28px;
+  padding-bottom: 36px;
+}
+
+/* Statistiques principales */
+.stats,
+.value-stats {
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.stat {
+  position: relative;
+  overflow: hidden;
+  padding: 20px 17px;
+  border-radius: 20px;
+  background: #FFFEFA;
+  border: 1px solid #E2E6DC;
+  box-shadow: 0 7px 22px rgba(41, 56, 45, 0.06);
+}
+
+.stat::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: #B8CDB5;
+}
+
+.stat strong {
+  margin: 3px 0;
+  color: #405744;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+}
+
+.stat span {
+  display: block;
+  color: #6D786D;
+  line-height: 1.4;
+}
+
+/* Panneaux de l'accueil */
+.panel {
+  padding: 22px;
+  border-radius: 20px;
+  background: #FFFEFA;
+  border: 1px solid #E2E6DC;
+  box-shadow: 0 7px 22px rgba(41, 56, 45, 0.05);
+}
+
+.panel h2 {
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+  letter-spacing: -0.025em;
+}
+
+/* Espacement plus aéré entre les zones */
+.map-panel {
+  margin-top: 20px;
+}
+
+.toolbar {
+  margin-bottom: 16px;
+}
+
+/* État vide plus accueillant */
+.empty {
+  padding: 32px 20px;
+  line-height: 1.6;
+  border: 1px dashed #C7D4C3;
+  background: rgba(255, 254, 250, 0.85);
+  border-radius: 20px;
+}
+
+/* Adaptation mobile */
+@media (max-width: 650px) {
+  main {
+    padding: 18px 13px 28px;
+  }
+
+  .stats,
+  .value-stats {
+    gap: 9px;
+    margin-bottom: 17px;
+  }
+
+  .stat {
+    padding: 15px 11px;
+    border-radius: 16px;
+  }
+
+  .stat strong {
+    font-size: 1.25rem;
+  }
+
+  .stat span {
+    font-size: 0.78rem;
+  }
+
+  .panel {
+    padding: 16px;
+    border-radius: 17px;
+  }
+
+  .panel h2 {
+    font-size: 1.1rem;
+  }
+}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
