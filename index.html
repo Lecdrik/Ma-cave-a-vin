@@ -1305,6 +1305,28 @@ const $=id=>document.getElementById(id);
 const year=new Date().getFullYear();
 const fmt=n=>Number(n||0).toLocaleString('fr-FR');
 function save(){localStorage.setItem(KEY,JSON.stringify(wines));render()}
+  
+function compressPhoto(file, callback) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 1200;
+      const ratio = Math.min(1, max / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      callback(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = () => callback(reader.result);
+    img.src = reader.result;
+  };
+  reader.onerror = () => callback('');
+  reader.readAsDataURL(file);
+}
+
 function status(w){
  const from=Number(w.drinkFrom)||null, until=Number(w.drinkUntil)||null;
  if(until && year>until)return {key:'late',label:'Fenêtre dépassée',cls:'late'};
@@ -1396,6 +1418,51 @@ function switchTab(tab){
 }
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+  
+function compressPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = () => reject(new Error('Lecture de la photo impossible.'));
+
+    reader.onload = () => {
+      const img = new Image();
+
+      img.onerror = () => reject(new Error('Image impossible à lire.'));
+
+      img.onload = () => {
+        const maxSize = 1200;
+        const ratio = Math.min(
+          1,
+          maxSize / Math.max(img.naturalWidth, img.naturalHeight)
+        );
+
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * ratio));
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * ratio));
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Compression impossible.'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        try {
+          resolve(canvas.toDataURL('image/jpeg', 0.72));
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      img.src = reader.result;
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
 $('labelPhoto').addEventListener('change', e => {
   const f = e.target.files[0];
   if (!f) return;
@@ -1410,7 +1477,18 @@ $('labelPhoto').addEventListener('change', e => {
     $('ocrStatus').textContent =
       'Photo de face prête. Tu peux aussi ajouter la photo arrière.';
   };
-  r.readAsDataURL(f);
+  compressPhoto(f, data => {
+  if (!data) {
+    $('ocrStatus').textContent = 'Erreur lors du chargement de la photo arrière.';
+    return;
+  }
+  backPhotoData = data;
+  $('backPhotoPreview').innerHTML =
+    '<img alt="Photo arrière" style="max-width:220px;max-height:260px;border-radius:8px" src="' +
+    backPhotoData + '">';
+  $('ocrStatus').textContent =
+    'Photo arrière prête. Appuie sur le bouton de lecture pour analyser les étiquettes.';
+});
 });
  
 $('backLabelPhoto').addEventListener('change', e => {
@@ -1427,7 +1505,18 @@ $('backLabelPhoto').addEventListener('change', e => {
     $('ocrStatus').textContent =
       'Photo arrière prête. Appuie sur le bouton de lecture pour analyser les étiquettes.';
   };
-  r.readAsDataURL(f);
+compressPhoto(f, data => {
+  if (!data) {
+    $('ocrStatus').textContent = 'Erreur lors du chargement de la photo.';
+    return;
+  }
+  photoData = data;
+  $('photoPreview').innerHTML =
+    '<img alt="Photo de face" style="max-width:220px;max-height:260px;border-radius:8px" src="' +
+    photoData + '">';
+  $('ocrStatus').textContent =
+    'Photo de face prête. Tu peux aussi ajouter la photo arrière.';
+});
 });
 $('readLabel').addEventListener('click', async () => {
   const frontFile = $('labelPhoto').files[0];
