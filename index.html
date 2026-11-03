@@ -1463,20 +1463,27 @@ function compressPhoto(file) {
   });
 }
 
+
 $('labelPhoto').addEventListener('change', e => {
   const f = e.target.files[0];
   if (!f) return;
 
-  const r = new FileReader();
-  r.onload = () => {
-    photoData = r.result;
+  compressPhoto(f, data => {
+    if (!data) {
+      $('ocrStatus').textContent = 'Erreur lors du chargement de la photo.';
+      return;
+    }
+
+    photoData = data;
     $('photoPreview').innerHTML =
       '<img alt="Photo de face" style="max-width:220px;max-height:260px;border-radius:8px" src="' +
       photoData + '">';
 
     $('ocrStatus').textContent =
       'Photo de face prête. Tu peux aussi ajouter la photo arrière.';
-  };
+  });
+});
+
   compressPhoto(f, data => {
   if (!data) {
     $('ocrStatus').textContent = 'Erreur lors du chargement de la photo arrière.';
@@ -1491,20 +1498,27 @@ $('labelPhoto').addEventListener('change', e => {
 });
 });
  
+
 $('backLabelPhoto').addEventListener('change', e => {
   const f = e.target.files[0];
   if (!f) return;
 
-  const r = new FileReader();
-  r.onload = () => {
-    backPhotoData = r.result;
+  compressPhoto(f, data => {
+    if (!data) {
+      $('ocrStatus').textContent = 'Erreur lors du chargement de la photo arrière.';
+      return;
+    }
+
+    backPhotoData = data;
     $('backPhotoPreview').innerHTML =
       '<img alt="Photo arrière" style="max-width:220px;max-height:260px;border-radius:8px" src="' +
       backPhotoData + '">';
 
     $('ocrStatus').textContent =
       'Photo arrière prête. Appuie sur le bouton de lecture pour analyser les étiquettes.';
-  };
+  });
+});
+
 compressPhoto(f, data => {
   if (!data) {
     $('ocrStatus').textContent = 'Erreur lors du chargement de la photo.';
