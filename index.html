@@ -1410,7 +1410,7 @@ $('backPhotoPreview').innerHTML='';$('photoPreview').innerHTML='';}
 function switchTab(tab){
   document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
   $(tab).classList.remove('hidden');
- 
+ }
 document.querySelectorAll('.tabs button').forEach(b =>
   b.addEventListener('click', () => switchTab(b.dataset.tab))
 );
