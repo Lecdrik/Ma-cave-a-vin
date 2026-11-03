@@ -684,6 +684,201 @@ main {
     font-size: 1.1rem;
   }
 }
+/* === NOUVEL ACCUEIL : MA CAVE A VIN === */
+
+/* Bandeau d'accueil plus immersif */
+header {
+  position: relative;
+  overflow: hidden;
+  padding: 34px max(22px, calc((100% - 1100px) / 2)) 38px;
+  background:
+    radial-gradient(circle at 90% 10%, rgba(184, 205, 181, 0.28), transparent 32%),
+    linear-gradient(135deg, #354B3A 0%, #536B57 58%, #71876D 100%);
+  border: 0;
+  border-radius: 0 0 28px 28px;
+  box-shadow: 0 12px 30px rgba(41, 56, 45, 0.15);
+}
+
+header h1 {
+  position: relative;
+  z-index: 1;
+  max-width: 700px;
+  font-size: clamp(1.8rem, 4vw, 2.65rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.045em;
+}
+
+header p {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+  margin-top: 12px;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: #F0F5ED;
+}
+
+/* Contenu principal */
+main {
+  max-width: 1140px;
+  padding-top: 30px;
+  padding-bottom: 40px;
+}
+
+/* Statistiques : cartes plus visuelles */
+.stats {
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 125px;
+  padding: 22px 20px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #FFFEFA, #F1F5ED);
+  border: 1px solid #DDE6D9;
+  border-radius: 22px;
+  box-shadow: 0 8px 22px rgba(41, 56, 45, 0.07);
+}
+
+.stat::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  background: #8EAA8B;
+}
+
+.stat strong {
+  display: block;
+  margin-bottom: 7px;
+  color: #354B3A;
+  font-size: clamp(1.65rem, 3vw, 2.15rem);
+  font-weight: 850;
+  line-height: 1.1;
+  letter-spacing: -0.05em;
+}
+
+.stat span {
+  color: #667568;
+  font-size: 0.9rem;
+  font-weight: 550;
+  line-height: 1.45;
+}
+
+/* Statistiques de valeur */
+.value-stats {
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.value-stats .stat {
+  min-height: 112px;
+  background: #FFFEFA;
+}
+
+/* Panneaux et sections */
+.panel {
+  padding: 23px;
+  margin-bottom: 18px;
+  border: 1px solid #E2E6DC;
+  border-radius: 22px;
+  box-shadow: 0 8px 24px rgba(41, 56, 45, 0.045);
+}
+
+.panel h2 {
+  margin-bottom: 17px;
+  color: #405744;
+  font-size: 1.22rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+/* Navigation plus lisible */
+.tabs {
+  gap: 9px;
+  margin: 22px 0;
+}
+
+.tabs button {
+  padding: 11px 16px;
+  border-radius: 999px;
+  font-weight: 650;
+}
+
+/* Adaptation aux petits écrans */
+@media (max-width: 650px) {
+  header {
+    padding: 29px 19px 32px;
+    border-radius: 0 0 23px 23px;
+  }
+
+  header h1 {
+    font-size: 1.9rem;
+  }
+
+  header p {
+    margin-top: 10px;
+    font-size: 0.93rem;
+  }
+
+  main {
+    padding: 22px 13px 30px;
+  }
+
+  .stats {
+    gap: 9px;
+    margin-bottom: 20px;
+  }
+
+  .stat {
+    min-height: 105px;
+    padding: 17px 12px 15px 15px;
+    border-radius: 17px;
+  }
+
+  .stat strong {
+    font-size: 1.45rem;
+  }
+
+  .stat span {
+    font-size: 0.76rem;
+  }
+
+  .value-stats {
+    gap: 9px;
+  }
+
+  .value-stats .stat {
+    min-height: 100px;
+  }
+
+  .panel {
+    padding: 17px;
+    margin-bottom: 14px;
+    border-radius: 18px;
+  }
+
+  .panel h2 {
+    font-size: 1.1rem;
+  }
+
+  .tabs {
+    margin: 17px 0;
+  }
+
+  .tabs button {
+    padding: 10px 13px;
+  }
+}
+  
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
