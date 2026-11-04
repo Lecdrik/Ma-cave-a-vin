@@ -1254,6 +1254,7 @@ async function uploadWinePhoto(photo, userId, wineId, side) {
   return path;
 }
 
+
 document.getElementById('syncUpload').addEventListener('click', async () => {
   try {
     const { data: { user }, error: authError } =
@@ -1265,7 +1266,7 @@ document.getElementById('syncUpload').addEventListener('click', async () => {
     }
 
     if (!confirm(
-      'Envoyer les bouteilles et leurs photos vers le cloud ?'
+      'Envoyer les fiches de bouteilles vers le cloud ?'
     )) return;
 
     const localWines = JSON.parse(localStorage.getItem(KEY) || '[]');
@@ -1275,25 +1276,9 @@ document.getElementById('syncUpload').addEventListener('click', async () => {
       return;
     }
 
-    syncStatus('Envoi des bouteilles et des photos en cours…');
+    syncStatus('Envoi des fiches de bouteilles en cours…');
 
-    const rows = [];
-
-    for (const w of localWines) {
-      const row = toCloudWine(w, user.id);
-
-      row.bottle_photo_url = await uploadWinePhoto(
-        w.photo || w.bottlePhotoUrl,
-        user.id, w.id, 'front'
-      );
-
-      row.labbel_photo_url = await uploadWinePhoto(
-        w.backPhoto || w.labbelPhotoUrl,
-        user.id, w.id, 'back'
-      );
-
-      rows.push(row);
-    }
+    const rows = localWines.map(w => toCloudWine(w, user.id));
 
     const { error } = await supabaseClient
       .from('wines')
@@ -1304,14 +1289,44 @@ document.getElementById('syncUpload').addEventListener('click', async () => {
       return;
     }
 
-    syncStatus(
-      localWines.length +
-      ' fiche(s) envoyée(s), avec les références des photos.'
-    );
+    syncStatus('Fiches enregistrées. Envoi des photos en cours…');
+
+    let photosOk = 0;
+    let photosError = 0;
+
+    for (const w of localWines) {
+      for (const item of [
+        { photo: w.photo || w.bottlePhotoUrl, side: 'front' },
+        { photo: w.backPhoto || w.labbelPhotoUrl, side: 'back' }
+      ]) {
+        if (!item.photo || !item.photo.startsWith('data:image/')) continue;
+
+        try {
+          await uploadWinePhoto(item.photo, user.id, w.id, item.side);
+          photosOk++;
+        } catch (error) {
+          photosError++;
+        }
+      }
+    }
+
+    if (photosError > 0) {
+      syncStatus(
+        localWines.length + ' fiche(s) enregistrée(s). ' +
+        photosOk + ' photo(s) envoyée(s), ' +
+        photosError + ' échec(s) photo. Les fiches sont conservées.'
+      );
+    } else {
+      syncStatus(
+        localWines.length + ' fiche(s) enregistrée(s). ' +
+        photosOk + ' photo(s) envoyée(s).'
+      );
+    }
   } catch (error) {
-    syncStatus('Erreur pendant l’envoi des photos : ' + error.message);
+    syncStatus('Erreur de synchronisation : ' + error.message);
   }
 });
+
 
 document.getElementById('syncDownload').addEventListener('click', async () => {
   const { data: { user }, error: authError } =
