@@ -1304,8 +1304,9 @@ document.getElementById('syncUpload').addEventListener('click', async () => {
         try {
           await uploadWinePhoto(item.photo, user.id, w.id, item.side);
           photosOk++;
-        } catch (error) {
+         } catch (error) {
           photosError++;
+          console.error('Erreur photo ' + item.side + ' :', error);
         }
       }
     }
