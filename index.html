@@ -1217,23 +1217,42 @@ function fromCloudWine(w) {
   };
 }
 
+
 async function uploadWinePhoto(photo, userId, wineId, side) {
   if (!photo) return null;
 
-  // Si ce n'est pas une photo locale, conserver la référence existante.
   if (!photo.startsWith('data:image/')) return photo;
 
-  const response = await fetch(photo);
-  const blob = await response.blob();
+  let blob;
+
+  try {
+    const response = await fetch(photo);
+    if (!response.ok) {
+      throw new Error('Lecture de la photo impossible.');
+    }
+    blob = await response.blob();
+  } catch (error) {
+    throw new Error('LECTURE PHOTO : ' + error.message);
+  }
+
   const path = `${userId}/${wineId}-${side}.jpg`;
 
-  const { error } = await supabaseClient
-    .storage
-    .from('wine-photos')
-    .upload(path, blob, {
-      upsert: true,
-      contentType: 'image/jpeg'
-    });
+  try {
+    const { error } = await supabaseClient
+      .storage
+      .from('wine-photos')
+      .upload(path, blob, {
+        upsert: true,
+        contentType: 'image/jpeg'
+      });
+
+    if (error) throw error;
+  } catch (error) {
+    throw new Error('ENVOI SUPABASE : ' + error.message);
+  }
+
+  return path;
+}
 
   if (error) throw error;
 
