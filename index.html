@@ -925,11 +925,14 @@ header .welcome-note {
   <div class="welcome-note">Une cave à ton image, simplement.</div>
 </header>
 <main>
+
 <div class="stats">
  <div class="stat"><strong id="statBottles">0</strong><span>bouteilles en cave</span></div>
  <div class="stat"><strong id="statReady">0</strong><span>à boire / bientôt</span></div>
  <div class="stat"><strong id="statLate">0</strong><span>à vérifier</span></div>
+ <div class="stat"><strong id="statKeep">0</strong><span>à conserver</span></div>
 </div>
+
 <div class="notice">Les fenêtres de dégustation sont des estimations à confirmer selon le producteur, le millésime et la conservation. Cette version garde les données sur cet appareil uniquement.</div>
 <div class="tabs">
  <button class="active" data-tab="inventory">Ma cave</button>
@@ -1463,6 +1466,7 @@ let selectedVineyardCountry = '';
  $('statBottles').textContent=fmt(total);
  $('statReady').textContent=fmt(wines.filter(w=>['ready','late'].includes(status(w).key)).reduce((a,w)=>a+Number(w.quantity||0),0));
  $('statLate').textContent=fmt(wines.filter(w=>status(w).key==='late').reduce((a,w)=>a+Number(w.quantity||0),0));
+ $('statKeep').textContent=fmt(wines.filter(w=>status(w).key==='keep').reduce((a,w)=>a+Number(w.quantity||0),0));  
  const pricedPurchase=wines.reduce((a,w)=>a+(w.purchase!==''&&w.purchase!=null?Number(w.purchase||0)*Number(w.quantity||0):0),0);
  const pricedMarket=wines.reduce((a,w)=>a+(w.marketPrice!==''&&w.marketPrice!=null?Number(w.marketPrice||0)*Number(w.quantity||0):0),0);
  const euro=n=>Number(n||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
