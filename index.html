@@ -1254,11 +1254,6 @@ async function uploadWinePhoto(photo, userId, wineId, side) {
   return path;
 }
 
-  if (error) throw error;
-
-  return path;
-}
-
 document.getElementById('syncUpload').addEventListener('click', async () => {
   try {
     const { data: { user }, error: authError } =
